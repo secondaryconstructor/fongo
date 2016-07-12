@@ -23,6 +23,7 @@ import com.mongodb.FongoDBCollection;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoException;
 import com.mongodb.QueryBuilder;
+import com.mongodb.ReplicaSetStatus;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
@@ -3770,6 +3771,15 @@ public class FongoTest {
     // Then
     assertThat(dbObjects).hasSize(1).containsOnly(new BasicDBObject("_id", 5).append("array", Util.list("1", "2")));
   }
+
+  @Test
+  public void should_getReplicaSetStatus_works() {
+    final ReplicaSetStatus replicaSetStatus = fongoRule.getMongo().getReplicaSetStatus();
+    Assertions.assertThat(replicaSetStatus).isNull();
+    System.out.println(replicaSetStatus);
+
+  }
+
 
   static class Seq {
     Object[] data;
