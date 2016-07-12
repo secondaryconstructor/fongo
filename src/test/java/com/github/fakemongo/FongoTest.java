@@ -23,6 +23,7 @@ import com.mongodb.FongoDBCollection;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoException;
 import com.mongodb.QueryBuilder;
+import com.mongodb.ReplicaSetStatus;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
@@ -3515,6 +3516,15 @@ public class FongoTest {
     assertEquals(new Document("ok", 1.0).append("n", documentsToAdd.size()), insert);
     assertEquals(documentsToAdd.size(), database.getCollection(aCollection).count());
   }
+
+  @Test
+  public void should_getReplicaSetStatus_works() {
+    final ReplicaSetStatus replicaSetStatus = fongoRule.getMongo().getReplicaSetStatus();
+    Assertions.assertThat(replicaSetStatus).isNull();
+    System.out.println(replicaSetStatus);
+
+  }
+
 
   static class Seq {
     Object[] data;

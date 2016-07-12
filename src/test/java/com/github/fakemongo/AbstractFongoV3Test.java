@@ -1133,7 +1133,7 @@ public abstract class AbstractFongoV3Test {
 
   @Test
   public void shouldFindOneDocumentWithoutTheOptionalFieldWithNoIndex() {
-// Given
+    // Given
     MongoCollection<Document> collection = newCollection();
     collection.insertOne(new Document("_id", "id1").append("optionalField", "value"));
     collection.insertOne(new Document("_id", "id2"));

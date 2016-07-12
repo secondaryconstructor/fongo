@@ -1,10 +1,19 @@
 package com.mongodb;
 
 import com.github.fakemongo.Fongo;
+import com.github.fakemongo.FongoConnection;
+import com.mongodb.async.SingleResultCallback;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.connection.AsyncConnection;
 import com.mongodb.connection.BufferProvider;
+import com.mongodb.connection.Cluster;
+import com.mongodb.connection.ClusterDescription;
+import com.mongodb.connection.Connection;
+import com.mongodb.connection.Server;
+import com.mongodb.connection.ServerDescription;
 import com.mongodb.internal.connection.PowerOfTwoBufferPool;
 import com.mongodb.operation.OperationExecutor;
+import com.mongodb.selector.ServerSelector;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +39,18 @@ public class MockMongoClient extends MongoClient {
     client.setWriteConcern(clientOptions.getWriteConcern());
     client.setReadPreference(clientOptions.getReadPreference());
     client.readConcern = clientOptions.getReadConcern() == null ? ReadConcern.DEFAULT : clientOptions.getReadConcern();
+    try {
+      Mongo.class.getDeclaredMethod("getClusterDescription").setAccessible(true);
+      Mongo.class.getDeclaredMethod("getClusterDescription").
+      Mongo.class.getDeclaredField("cluster").setAccessible(true);
+      Mongo.class.getDeclaredField("cluster").set(client, client.getCluster());
+    } catch (IllegalAccessException e) {      e.printStackTrace();
+
+      e.printStackTrace();
+    } catch (NoSuchFieldException e) {
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    }
     return client;
   }
 
@@ -91,58 +112,51 @@ public class MockMongoClient extends MongoClient {
     return Collections.singletonList(fongo.getServerAddress());
   }
 
-//  @Override
-//  public Cluster getCluster() {
-//    return new Cluster() {
-//      @Override
-//      public ClusterDescription getDescription() {
-//        return null;
-//      }
-//
-//      @Override
-//      public Server selectServer(ServerSelector serverSelector) {
-//        return new Server() {
-//          @Override
-//          public ServerDescription getDescription() {
-//            return new ObjenesisStd().getInstantiatorOf(ServerDescription.class).newInstance();
-//          }
-//
-//          @Override
-//          public Connection getConnection() {
-//            return new FongoConnection(fongo);
-//          }
-//
-//          /**
-//           * <p>Gets a connection to this server asynchronously.  The connection should be released after the caller is done with it.</p>
-//           * <p/>
-//           * <p> Implementations of this method will likely pool the underlying connection, so the effect of closing the returned connection will
-//           * be to return the connection to the pool. </p>
-//           *
-//           * @param callback the callback to execute when the connection is available or an error occurs
-//           */
-//          @Override
-//          public void getConnectionAsync(SingleResultCallback<AsyncConnection> callback) {
-//          }
-//
-//        };
-//      }
-//
-//      @Override
-//      public void selectServerAsync(ServerSelector serverSelector, SingleResultCallback<Server> callback) {
-//
-//      }
-//
-//      @Override
-//      public void close() {
-//
-//      }
-//
-//      @Override
-//      public boolean isClosed() {
-//        return false;
-//      }
-//    };
-//  }
+  @Override
+  public Cluster getCluster() {
+    return new Cluster() {
+      @Override
+      public ClusterDescription getDescription() {
+        return null;
+      }
+
+      @Override
+      public Server selectServer(ServerSelector serverSelector) {
+        return new Server() {
+          @Override
+          public ServerDescription getDescription() {
+            return new ObjenesisStd().getInstantiatorOf(ServerDescription.class).newInstance();
+          }
+
+          @Override
+          public Connection getConnection() {
+            return new FongoConnection(fongo);
+          }
+
+          @Override
+          public void getConnectionAsync(SingleResultCallback<AsyncConnection> callback) {
+            // TODO
+          }
+
+        };
+      }
+
+      @Override
+      public void selectServerAsync(ServerSelector serverSelector, SingleResultCallback<Server> callback) {
+
+      }
+
+      @Override
+      public void close() {
+
+      }
+
+      @Override
+      public boolean isClosed() {
+        return false;
+      }
+    };
+  }
 
   OperationExecutor createOperationExecutor() {
     return fongo;
