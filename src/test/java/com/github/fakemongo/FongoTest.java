@@ -2119,7 +2119,7 @@ public class FongoTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0).keySet()).containsExactly("_id", "nested");
     assertThat(result.get(0).get("_id")).isEqualTo(1);
-    assertThat(DBObject.class.isAssignableFrom(result.get(0).get("nested").getClass()));
+    assertThat(DBObject.class.isAssignableFrom(result.get(0).get("nested").getClass())).isTrue();
     assertThat(((DBObject) result.get(0).get("nested")).get("value")).isEqualTo("nestedByteArray".getBytes());
   }
 
