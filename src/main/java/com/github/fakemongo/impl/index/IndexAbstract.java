@@ -308,7 +308,7 @@ public abstract class IndexAbstract<T extends DBObject> {
       if (searchQueryFields instanceof BasicDBList) {
         // when it's a list, there's no need to investigate nested documents
         return true;
-      } else if (!searchQueryFields.containsField(fieldPart)) {
+      } else if (!searchQueryFields.containsField(fieldPart) || searchQueryFields.get(fieldPart) == null) { // Change if sparse ?
         return false;
       } else if (ExpressionParser.isDbObject(searchQueryFields.get(fieldPart))) {
         searchQueryFields = ExpressionParser.toDbObject(searchQueryFields.get(fieldPart));

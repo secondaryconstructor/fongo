@@ -1152,6 +1152,7 @@ public abstract class AbstractFongoV3Test {
 
     // Then
     assertThat(result).isEqualTo(1);
+    assertThat(collection.count(new Document("optionalField", null))).isEqualTo(1);
   }
 
   @Test
@@ -1166,8 +1167,8 @@ public abstract class AbstractFongoV3Test {
     long result = collection.count(new Document("optionalField", new Document("$exists", false)));
 
     // Then
-    // Broken: result is 0
     assertThat(result).isEqualTo(1);
+    assertThat(collection.count(new Document("optionalField", null))).isEqualTo(1);
   }
 
   private Document docId(final Object value) {

@@ -419,7 +419,7 @@ public class ExpressionParser {
     return andFilter;
   }
 
-  public <T> T typecast(String fieldName, Object obj, Class<T> clazz) {
+  <T> T typecast(String fieldName, Object obj, Class<T> clazz) {
     try {
       return clazz.cast(obj);
     } catch (Exception e) {
@@ -427,7 +427,7 @@ public class ExpressionParser {
     }
   }
 
-  public DBObject castToDBObject(String fieldName, Object obj) {
+  private DBObject castToDBObject(String fieldName, Object obj) {
     if (isDbObject(obj)) {
       return toDbObject(obj);
     }
