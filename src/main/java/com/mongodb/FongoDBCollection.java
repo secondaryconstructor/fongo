@@ -919,7 +919,9 @@ public class FongoDBCollection extends DBCollection {
             LOG.debug("$elemMatch projection of field \"{}\", gave result: {} ({})", projectionKey, ret, ret.getClass());
           }
         } else if (isSlice) {
-          slice(result, projectionObject, projectionKey, projectionValue, ret);
+          if (!slice(result, projectionObject, projectionKey, projectionValue, ret)) {
+            ret = null;
+          }
         } else {
           final String msg = "Projection `" + projectionKey
               + "' has a value that Fongo doesn't know how to handle: " + projectionValue
@@ -933,9 +935,13 @@ public class FongoDBCollection extends DBCollection {
     return ret;
   }
 
-  private static void slice(DBObject result, DBObject projectionObject, String projectionKey, Object projectionValue, BasicDBObject ret) throws MongoException {
+  private static boolean slice(DBObject result, DBObject projectionObject, String projectionKey, Object projectionValue, BasicDBObject ret) throws MongoException {
     ret.removeField(projectionKey);
     List searchIn = ((BasicDBList) result.get(projectionKey));
+    if (searchIn == null) {
+      ret.clear();
+      return false;
+    }
     final BasicDBObject basicDBObject = (BasicDBObject) projectionObject.get(projectionKey);
     int start = 0;
     int limit;
@@ -973,6 +979,7 @@ public class FongoDBCollection extends DBCollection {
       slice.add(searchIn.get(i - 1));
     }
     ret.put(projectionKey, slice);
+    return true;
   }
 
   public Collection<DBObject> sortObjects(final DBObject orderby, final Collection<DBObject> objects) {

@@ -26,12 +26,14 @@ import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.Projections;
 import static com.mongodb.client.model.Projections.excludeId;
+import static com.mongodb.client.model.Projections.slice;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReturnDocument;
 import static com.mongodb.client.model.Sorts.ascending;
 import static com.mongodb.client.model.Sorts.descending;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.connection.ServerVersion;
@@ -1169,6 +1171,19 @@ public abstract class AbstractFongoV3Test {
     // Then
     assertThat(result).isEqualTo(1);
     assertThat(collection.count(new Document("optionalField", null))).isEqualTo(1);
+  }
+
+  @Test
+  public void should_$slice_works_on_an_non_existant_array() {
+    // Given
+    MongoCollection collection = newCollection();
+
+    // When
+    final Object oneAndUpdate = collection.findOneAndUpdate(new Document("_id", 1), Updates.set("randomkey", "randomvalue"), new FindOneAndUpdateOptions().upsert(true).projection(slice("key", 1)));
+
+    // Then
+    Assertions.assertThat(oneAndUpdate).isNull();
+    Assertions.assertThat(collection.count()).isEqualTo(1);
   }
 
   private Document docId(final Object value) {
