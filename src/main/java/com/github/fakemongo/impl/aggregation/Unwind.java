@@ -2,11 +2,14 @@ package com.github.fakemongo.impl.aggregation;
 
 import com.github.fakemongo.impl.Util;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.annotations.ThreadSafe;
+import org.bson.BSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,9 +30,9 @@ public class Unwind extends PipelineKeyword {
    * <pre>
    * $unwind is most useful in combination with $group.
    * You may undo the effects of unwind operation with the $group pipeline operator.
-   * If you specify a target field for $unwind that does not exist in an input document, the pipeline ignores the input document, and will generate no result documents.
+   * If you specify a target field for $unwind that does not exist in an input document, the pipeline ignores the input document, and will generate no result documents, unless the option preserveNullAndEmptyArrays is set to <code>true</code>.
    * If the operand does not resolve to an array but is not missing, null, or an empty array, $unwind treats the operand as a single element array.
-   * If you specify a target field for $unwind that holds an empty array ([]) in an input document, the pipeline ignores the input document, and will generates no result documents.
+   * If you specify a target field for $unwind that holds an empty array ([]) in an input document, the pipeline ignores the input document, and will generates no result documents, unless the option preserveNullAndEmptyArrays is set to <code>true</code>.
    * </pre>
    *
    * @param coll
@@ -38,9 +41,25 @@ public class Unwind extends PipelineKeyword {
    */
   @Override
   public DBCollection apply(DB originalDB, DBCollection coll, DBObject object) {
-    String fieldName = object.get(getKeyword()).toString();
+    String fieldName = null;
+    boolean preserveNullAndEmptyArrays = false;
+
+    Object unwindObject = object.get(getKeyword());
+    if (unwindObject instanceof String) {
+      fieldName = unwindObject.toString();
+    } else if (unwindObject instanceof BasicDBObject) {
+      BasicDBObject unwindDBObject = (BasicDBObject) unwindObject;
+      if (unwindDBObject.containsField("path")) {
+        fieldName = unwindDBObject.getString("path");
+        preserveNullAndEmptyArrays = getPreserveNullAndEmptyArrays(unwindDBObject);
+      }
+    }
+
+    if (fieldName == null || fieldName.trim().isEmpty()) {
+      throw new MongoException(28812, "no path specified to $unwind stage");
+    }
     if (!fieldName.startsWith("$")) {
-      throw new MongoException(""); // TODO
+      throw new MongoException(28818, String.format("path option to $unwind stage should be prefixed with a '$': %s", fieldName));
     }
     fieldName = fieldName.substring(1);
 
@@ -61,10 +80,26 @@ public class Unwind extends PipelineKeyword {
 //          newValue.removeField("_id"); // TODO _id must be the same (but Fongo doesn't handle)
             result.add(newValue);
           }
+          if (preserveNullAndEmptyArrays && list.isEmpty()) {
+            result.add(Util.clone(dbObject));
+          }
         }
+      } else if (preserveNullAndEmptyArrays) {
+        result.add(Util.clone(dbObject));
       }
     }
     return dropAndInsert(coll, result);
+  }
+
+  private boolean getPreserveNullAndEmptyArrays(BasicDBObject unwindDBObject) {
+    if (unwindDBObject.containsField("preserveNullAndEmptyArrays")) {
+      String option = unwindDBObject.getString("preserveNullAndEmptyArrays");
+      if (!"true".equalsIgnoreCase(option) && !"false".equalsIgnoreCase(option)) {
+        throw new MongoException(28810, String.format("expected a boolean for the preserveNullAndEmptyArrays option to $unwind stage, got %s", option));
+      }
+      return Boolean.parseBoolean(option);
+    }
+    return false;
   }
 
   @Override
