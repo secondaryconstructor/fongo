@@ -5,6 +5,7 @@ import com.github.fakemongo.junit.FongoRule;
 import com.google.common.collect.Iterables;
 import com.mongodb.AggregationOptions;
 import com.mongodb.AggregationOutput;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Cursor;
 import com.mongodb.DBCollection;
@@ -12,6 +13,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import org.assertj.core.api.Assertions;
@@ -254,6 +256,91 @@ public class FongoAggregateTest {
 
     // Assert
     Assertions.assertThat(output.results()).hasSize(0);
+  }
+
+  @Test
+  public void shouldUnwindAndPreserveEmptyList() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william").append("tags", Util.list()));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", true));
+
+    // Aggregate
+    AggregationOutput output = collection.aggregate(Collections.singletonList(unwind));
+
+    // Assert
+    Assertions.assertThat(output.results()).hasSize(1);
+    for (DBObject dbObject : output.results()) {
+      Assertions.assertThat(dbObject.get("tags")).isNotNull().isInstanceOf(BasicDBList.class);
+    }
+  }
+
+  @Test
+  public void shouldUnwindButNotPreserveEmptyList() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william").append("tags", Util.list()));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", false));
+
+    // Aggregate
+    AggregationOutput output = collection.aggregate(Collections.singletonList(unwind));
+
+    // Assert
+    Assertions.assertThat(output.results()).hasSize(0);
+  }
+
+  @Test
+  public void shouldUnwindAndPreserveNullList() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william"));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", true));
+
+    // Aggregate
+    AggregationOutput output = collection.aggregate(Collections.singletonList(unwind));
+
+    // Assert
+    Assertions.assertThat(output.results()).hasSize(1);
+    for (DBObject dbObject : output.results()) {
+      Assertions.assertThat(dbObject.get("tags")).isNull();
+    }
+  }
+
+  @Test(expected = MongoException.class)
+  public void shouldThrowExceptionWhenUnwindFieldNameDoesNotStartWith$() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william"));
+    DBObject unwind = new BasicDBObject("$unwind", "tags");
+
+    // Aggregate
+    collection.aggregate(Collections.singletonList(unwind));
+  }
+
+  @Test(expected = MongoException.class)
+  public void shouldThrowExceptionWhenUnwindPathIsEmpty() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william"));
+    DBObject unwind = new BasicDBObject("$unwind", "");
+
+    // Aggregate
+    collection.aggregate(Collections.singletonList(unwind));
+  }
+
+  @Test(expected = MongoException.class)
+  public void shouldThrowExceptionWhenFieldNameInPathDoesNotStartWith$() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william"));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "tags").append("preserveNullAndEmptyArrays", "true"));
+
+    // Aggregate
+    collection.aggregate(Collections.singletonList(unwind));
+  }
+
+  @Test(expected = MongoException.class)
+  public void shouldThrowExceptionWhenOptionPreserveNullAndEmptyArraysContainsInvalidValue() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william"));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", "yes"));
+
+    // Aggregate
+    collection.aggregate(Collections.singletonList(unwind));
   }
 
   @Test
