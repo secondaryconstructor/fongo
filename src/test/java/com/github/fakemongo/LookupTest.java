@@ -6,6 +6,7 @@ import com.github.fakemongo.junit.FongoRule;
 import com.github.fakemongo.test.beans.TestChildBean;
 import com.github.fakemongo.test.beans.TestParentBean;
 import com.mongodb.AggregationOutput;
+import com.mongodb.BasicDBList;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.apache.commons.lang3.RandomUtils;
@@ -231,6 +232,48 @@ public class LookupTest {
     parentBean.setId(randomAlphabetic(10));
     parentBean.setAttr(randomAlphabetic(10));
     return parentBean;
+  }
+
+  @Test
+  public void mustPreserveUnmatchedDocumentsFromLeftCollectionWhenLocalFieldIsMissing() throws Exception {
+    DBCollection leftCollection = fongoRule.newCollection();
+    fongoRule.insertJSON(leftCollection, "[\n" +
+            "    {\n" +
+            "        \"_id\" : \"p1\",\n" +
+            "        \"secondaryDocument\" : \"p1\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "        \"_id\" : \"p2\"\n" +
+            "    }\n" +
+            "]\n");
+    DBCollection rightCollection = fongoRule.newCollection();
+    fongoRule.insertJSON(rightCollection, "[" +
+            "    {\n" +
+            "        \"_id\" : \"s1\",\n" +
+            "        \"parentId\" : \"p1\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "        \"_id\" : \"s2\",\n" +
+            "        \"parentId\" : \"p1\"\n" +
+            "    }\n" +
+            "]");
+    DBObject lookup = fongoRule.parseDBObject("{$lookup : {\n" +
+            "        \"from\" :\"" + rightCollection.getName() + "\"," +
+            "        \"localField\" : \"secondaryDocument\",\n" +
+            "        \"foreignField\" : \"_id\",\n" +
+            "        \"as\" : \"secondaryCollItems\"\n" +
+            "    }\n" +
+            "}");
+    List<DBObject> pipeline = new ArrayList<DBObject>();
+    pipeline.add(lookup);
+    AggregationOutput output = leftCollection.aggregate(pipeline);
+    Iterable<DBObject> result = output.results();
+    Assertions.assertThat(result).isNotNull().hasSize(2);
+    for (DBObject dbObject : result) {
+      Assertions.assertThat(dbObject.get("secondaryCollItems")).isInstanceOf(BasicDBList.class);
+      int expectedNumberOfDocuments = "s1".equals(dbObject.get("_id")) ? 1 : 0;
+      Assertions.assertThat((BasicDBList)dbObject.get("secondaryCollItems")).hasSize(expectedNumberOfDocuments);
+    }
   }
 
 }
