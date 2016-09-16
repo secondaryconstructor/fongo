@@ -46,12 +46,14 @@ public class Lookup extends PipelineKeyword {
     // can't use lambdas
     Iterator<DBObject> iterator = parentItems.iterator();
     Map<String, DBObject> parentMap = new HashMap<String, DBObject>();
+    List<DBObject> parentsWithMissingLocalField = new ArrayList<DBObject>();
     // go through all parent items - put a list of DBObjects for the children
     while (iterator.hasNext()) {
       DBObject parentItem = iterator.next();
       String localFieldValue = (String) parentItem.get(localField);
       if (localFieldValue == null || "".equals(localField.trim())) {
-        LOG.warn("Ignoring blank or null local field value");
+        parentItem.put(as, new ArrayList<DBObject>());
+        parentsWithMissingLocalField.add(parentItem);
       }
       else {
         List<DBObject> childItems = (List<DBObject>) parentItem.get(as);
@@ -87,6 +89,7 @@ public class Lookup extends PipelineKeyword {
     }
     List<DBObject> retval = new ArrayList<DBObject>();
     retval.addAll(parentMap.values());
+    retval.addAll(parentsWithMissingLocalField);
     return retval;
   }
 }
