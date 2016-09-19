@@ -81,7 +81,9 @@ public class Unwind extends PipelineKeyword {
             result.add(newValue);
           }
           if (preserveNullAndEmptyArrays && list.isEmpty()) {
-            result.add(Util.clone(dbObject));
+            DBObject newValue = Util.clone(dbObject);
+            Util.removeField(newValue, fieldName);
+            result.add(newValue);
           }
         }
       } else if (preserveNullAndEmptyArrays) {
