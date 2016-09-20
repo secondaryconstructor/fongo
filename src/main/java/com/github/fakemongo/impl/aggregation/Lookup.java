@@ -25,7 +25,7 @@ public class Lookup extends PipelineKeyword {
   @Override
   public DBCollection apply(DB originalDB, DBCollection parentColl, DBObject object) {
     DBObject lookup = ExpressionParser.toDbObject(object.get(getKeyword()));
-    List<DBObject> parentItems = performLookup(parentColl, lookup);
+    List<DBObject> parentItems = performLookup(originalDB, parentColl, lookup);
     return dropAndInsert(parentColl, parentItems);
   }
 
@@ -34,7 +34,7 @@ public class Lookup extends PipelineKeyword {
     return "$lookup";
   }
 
-  private List<DBObject> performLookup(DBCollection parentColl, DBObject lookup) {
+  private List<DBObject> performLookup(DB originalDB, DBCollection parentColl, DBObject lookup) {
     String from = (String) lookup.get("from");
     String localField = (String) lookup.get("localField");
     String foreignField = (String) lookup.get("foreignField");
@@ -65,7 +65,8 @@ public class Lookup extends PipelineKeyword {
       }
     }
     // now loop through the children item and add them to the parent
-    DBCollection childColl = parentColl.getDB().getCollection(from);
+    DBCollection childColl = originalDB.getCollection(from);
+
     DBCursor childItems = childColl.find();
     Iterator<DBObject> childIterator = childItems.iterator();
     while (childIterator.hasNext()) {
