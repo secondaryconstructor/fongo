@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.junit.Assert.*;
 
@@ -240,7 +241,7 @@ public class LookupTest {
     fongoRule.insertJSON(leftCollection, "[\n" +
             "    {\n" +
             "        \"_id\" : \"p1\",\n" +
-            "        \"secondaryDocument\" : \"p1\"\n" +
+            "        \"secondaryDocument\" : \"s1\"\n" +
             "    },\n" +
             "    {\n" +
             "        \"_id\" : \"p2\"\n" +
@@ -249,12 +250,10 @@ public class LookupTest {
     DBCollection rightCollection = fongoRule.newCollection();
     fongoRule.insertJSON(rightCollection, "[" +
             "    {\n" +
-            "        \"_id\" : \"s1\",\n" +
-            "        \"parentId\" : \"p1\"\n" +
+            "        \"_id\" : \"s1\"\n" +
             "    },\n" +
             "    {\n" +
-            "        \"_id\" : \"s2\",\n" +
-            "        \"parentId\" : \"p1\"\n" +
+            "        \"_id\" : \"s2\"\n" +
             "    }\n" +
             "]");
     DBObject lookup = fongoRule.parseDBObject("{$lookup : {\n" +
@@ -269,10 +268,51 @@ public class LookupTest {
     AggregationOutput output = leftCollection.aggregate(pipeline);
     Iterable<DBObject> result = output.results();
     Assertions.assertThat(result).isNotNull().hasSize(2);
+    for (DBObject leftDbObject : result) {
+      Assertions.assertThat(leftDbObject.get("secondaryCollItems")).isInstanceOf(BasicDBList.class);
+      int expectedNumberOfDocuments = "p1".equals(leftDbObject.get("_id")) ? 1 : 0;
+      Assertions.assertThat((BasicDBList)leftDbObject.get("secondaryCollItems")).hasSize(expectedNumberOfDocuments);
+    }
+  }
+
+  @Test
+  public void mustLookupDocumentsWhenPreviousStageInPipelineHasRecreatedParentColl() throws Exception {
+    DBCollection leftCollection = fongoRule.newCollection();
+    fongoRule.insertJSON(leftCollection, "[\n" +
+            "    {\n" +
+            "        \"_id\" : \"p1\",\n" +
+            "        \"secondaryDocuments\" : [\"s1\", \"s2\"]\n" +
+            "    }\n" +
+            "]\n");
+    DBCollection rightCollection = fongoRule.newCollection();
+    fongoRule.insertJSON(rightCollection, "[" +
+            "    {\n" +
+            "        \"_id\" : \"s1\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "        \"_id\" : \"s2\"\n" +
+            "    }\n" +
+            "]");
+    DBObject unwind = fongoRule.parseDBObject("{$unwind : \"$secondaryDocuments\"}");
+    DBObject lookup = fongoRule.parseDBObject("{$lookup : {\n" +
+            "        \"from\" :\"" + rightCollection.getName() + "\"," +
+            "        \"localField\" : \"secondaryDocuments\",\n" +
+            "        \"foreignField\" : \"_id\",\n" +
+            "        \"as\" : \"secondaryCollItems\"\n" +
+            "    }\n" +
+            "}");
+
+    List<DBObject> pipeline = asList(unwind, lookup);
+    AggregationOutput output = leftCollection.aggregate(pipeline);
+    Iterable<DBObject> result = output.results();
+
+    Assertions.assertThat(result).isNotNull().hasSize(2);
     for (DBObject dbObject : result) {
-      Assertions.assertThat(dbObject.get("secondaryCollItems")).isInstanceOf(BasicDBList.class);
-      int expectedNumberOfDocuments = "s1".equals(dbObject.get("_id")) ? 1 : 0;
-      Assertions.assertThat((BasicDBList)dbObject.get("secondaryCollItems")).hasSize(expectedNumberOfDocuments);
+      Assertions.assertThat(dbObject.get("_id")).isEqualTo("p1");
+      Object secondaryCollItems = dbObject.get("secondaryCollItems");
+      Assertions.assertThat(secondaryCollItems).isNotNull().isInstanceOf(BasicDBList.class);
+      BasicDBList items = (BasicDBList) secondaryCollItems;
+      Assertions.assertThat(items).hasSize(1);
     }
   }
 
