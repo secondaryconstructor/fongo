@@ -5,30 +5,31 @@ import com.github.fakemongo.junit.FongoRule;
 import com.google.common.collect.Iterables;
 import com.mongodb.AggregationOptions;
 import com.mongodb.AggregationOutput;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Cursor;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
-import java.util.TimeZone;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Lists;
 import org.junit.Assert;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 // TODO : sum of double value ($sum : 1.3)
 // sum of "1" (String) must return 0.
@@ -242,6 +243,27 @@ public class FongoAggregateTest {
     assertEquals("william", Util.extractField(result.get(2), "author"));
     assertEquals("mongo", Util.extractField(result.get(2), "tags"));
   }
+  @Test
+  public void shouldUnwindListWhenPathContainsDot() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william").append("info", new BasicDBObject("tags", Util.list("scala", "java", "mongo"))));
+    DBObject unwind = new BasicDBObject("$unwind", "$info.tags");
+
+    // Aggregate
+    AggregationOutput output = collection.aggregate(Collections.singletonList(unwind));
+
+    // Assert
+    List<DBObject> result = Lists.newArrayList(output.results());
+    Assertions.assertThat(result).hasSize(3);
+    System.out.println(result);
+
+    assertEquals("william", Util.extractField(result.get(0), "author"));
+    assertEquals("scala", Util.extractField(result.get(0), "info.tags"));
+    assertEquals("william", Util.extractField(result.get(1), "author"));
+    assertEquals("java", Util.extractField(result.get(1), "info.tags"));
+    assertEquals("william", Util.extractField(result.get(2), "author"));
+    assertEquals("mongo", Util.extractField(result.get(2), "info.tags"));
+  }
 
   @Test
   public void shouldUnwindEmptyList() {
@@ -259,7 +281,7 @@ public class FongoAggregateTest {
   }
 
   @Test
-  public void shouldUnwindAndPreserveEmptyList() {
+  public void shouldUnwindAndPreserveDocumentWithEmptyList() {
     DBCollection collection = fongoRule.newCollection();
     collection.insert(new BasicDBObject("author", "william").append("tags", Util.list()));
     DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", true));
@@ -269,13 +291,29 @@ public class FongoAggregateTest {
 
     // Assert
     Assertions.assertThat(output.results()).hasSize(1);
-    for (DBObject dbObject : output.results()) {
-      Assertions.assertThat(dbObject.get("tags")).isNotNull().isInstanceOf(BasicDBList.class);
-    }
+    Assertions.assertThat(output.results().iterator().next().containsField("tags")).isFalse();
   }
 
   @Test
-  public void shouldUnwindButNotPreserveEmptyList() {
+  public void shouldUnwindAndPreserveDocumentWithEmptyListWhenPathContainsDot() {
+    DBCollection collection = fongoRule.newCollection();
+    collection.insert(new BasicDBObject("author", "william").append("info", new BasicDBObject("tags", Util.list())));
+    DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$info.tags").append("preserveNullAndEmptyArrays", true));
+
+    // Aggregate
+    AggregationOutput output = collection.aggregate(Collections.singletonList(unwind));
+
+    // Assert
+    Assertions.assertThat(output.results()).hasSize(1);
+
+    DBObject document = output.results().iterator().next();
+    Assertions.assertThat(document.containsField("info")).isTrue();
+    DBObject documentInfo = (DBObject) document.get("info");
+    Assertions.assertThat(documentInfo.containsField("tags")).isFalse();
+  }
+
+  @Test
+  public void shouldUnwindButNotPreserveDocumentWithEmptyList() {
     DBCollection collection = fongoRule.newCollection();
     collection.insert(new BasicDBObject("author", "william").append("tags", Util.list()));
     DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", false));
@@ -288,7 +326,7 @@ public class FongoAggregateTest {
   }
 
   @Test
-  public void shouldUnwindAndPreserveNullList() {
+  public void shouldUnwindAndPreserveDocumentWithNullList() {
     DBCollection collection = fongoRule.newCollection();
     collection.insert(new BasicDBObject("author", "william"));
     DBObject unwind = new BasicDBObject("$unwind", new BasicDBObject("path", "$tags").append("preserveNullAndEmptyArrays", true));
@@ -298,9 +336,7 @@ public class FongoAggregateTest {
 
     // Assert
     Assertions.assertThat(output.results()).hasSize(1);
-    for (DBObject dbObject : output.results()) {
-      Assertions.assertThat(dbObject.get("tags")).isNull();
-    }
+    Assertions.assertThat(output.results().iterator().next().containsField("tags")).isFalse();
   }
 
   @Test(expected = MongoException.class)

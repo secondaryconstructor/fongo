@@ -106,6 +106,31 @@ public final class Util {
   }
 
   /**
+   * Remove field in this object.
+   *
+   * @param object object to modify
+   * @param field  field name, possibly with dot '.' to match hierarchy.
+   */
+  public static void removeField(DBObject object, String field) {
+    if (object == null) {
+      return;
+    }
+    int indexDot = field.indexOf('.');
+    if (indexDot > 0) {
+      String subField = field.substring(indexDot + 1);
+      String actualField = field.substring(0, indexDot);
+      if (object.containsField(actualField)) {
+        Object value = object.get(actualField);
+        if (ExpressionParser.isDbObject(value)) {
+          removeField(ExpressionParser.toDbObject(value), subField);
+        }
+      }
+    } else {
+      object.removeField(field);
+    }
+  }
+
+  /**
    * Put a value in a {@link DBObject} with hierarchy.
    *
    * @param dbObject object to modify
