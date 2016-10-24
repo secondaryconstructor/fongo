@@ -72,6 +72,8 @@ public class FongoDBCollection extends DBCollection {
   // Fields/Index
   private final List<IndexAbstract> indexes = new ArrayList<IndexAbstract>();
   private final IndexAbstract _idIndex;
+  
+  private final String SYSTEM_ELEMENT = "system.";
 
   public FongoDBCollection(FongoDB db, String name) {
     this(db, name, false);
@@ -80,7 +82,7 @@ public class FongoDBCollection extends DBCollection {
   public FongoDBCollection(FongoDB db, String name, boolean idIsNotUniq) {
     super(db, name);
     this.fongoDb = db;
-    this.nonIdCollection = name.startsWith("system.");
+    this.nonIdCollection = name.startsWith(SYSTEM_ELEMENT);
     this.expressionParser = new ExpressionParser();
     this.updateEngine = new UpdateEngine();
     this.objectComparator = expressionParser.buildObjectComparator(true);
