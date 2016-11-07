@@ -76,7 +76,7 @@ public class FongoDBCollection extends DBCollection {
   public FongoDBCollection(FongoDB db, String name, boolean idIsNotUniq) {
     super(db, name);
     this.fongoDb = db;
-    this.nonIdCollection = name.startsWith("system");
+    this.nonIdCollection = name.startsWith("system.");
     this.expressionParser = new ExpressionParser();
     this.updateEngine = new UpdateEngine();
     this.objectComparator = expressionParser.buildObjectComparator(true);
