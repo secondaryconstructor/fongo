@@ -23,7 +23,7 @@ public class AggregationFongoTest {
 	private MongoCollection<Document> collection;
 	
 	@Before
-	public void beforeMethod(){
+	public void beforeMethod(){ 
 		Fongo fongo = new Fongo("test");
 		
 		MongoDatabase mongoDatabase = fongo.getMongo().getDatabase("test");
