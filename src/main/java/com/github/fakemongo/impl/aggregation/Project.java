@@ -855,7 +855,7 @@ public class Project extends PipelineKeyword {
 				
 				if(functionParameters instanceof List){
 
-					for(Object ele :functionParameters){ 
+					for(Object ele :functionParameters){
 						
 						if(isLeaf(ele))
 							return getLeafBasicDBObject(ele, as, functionParameters, function);
