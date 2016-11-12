@@ -793,17 +793,8 @@ public class Project extends PipelineKeyword {
 			
 			DBCollection tmpCollection = getClonedCollection(coll);
 			
-			
-			DBCursor cursor = tmpCollection.find();
-			while(cursor.hasNext())
-				System.out.println(cursor.next());
-			
 			tmpCollection.updateMulti(new BasicDBObject(), queryToDelete);
-			
-			DBCursor cursor1 = tmpCollection.find();
-			while(cursor1.hasNext())
-				System.out.println(cursor1.next());
-			
+					
 			subtraction(input, tmpCollection, coll);
 			
 			createMapping(coll, projectResult, projectedFields, INPUT, input, namespace, this);
