@@ -161,7 +161,7 @@ public class AggregationFongoTest {
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
 
-		final Map<String, Document> result = new HashMap<>();
+		final Map<String, Document> result = new HashMap<String, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
@@ -272,7 +272,7 @@ public class AggregationFongoTest {
 		
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
-		final Map<String, Document> result = new HashMap<>();
+		final Map<String, Document> result = new HashMap<String, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
@@ -330,7 +330,7 @@ public class AggregationFongoTest {
 		
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
-		final Map<Integer, Document> result = new HashMap<>();
+		final Map<Integer, Document> result = new HashMap<Integer, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
@@ -406,7 +406,7 @@ public class AggregationFongoTest {
 		
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
-		final Map<Integer, Document> result = new HashMap<>();
+		final Map<Integer, Document> result = new HashMap<Integer, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
@@ -463,7 +463,7 @@ public class AggregationFongoTest {
 		
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
-		final Map<Integer, Document> result = new HashMap<>();
+		final Map<Integer, Document> result = new HashMap<Integer, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
@@ -509,7 +509,7 @@ public class AggregationFongoTest {
 		
 		AggregateIterable<Document> iterable = collection.aggregate(Arrays.asList(pipeline));
 		
-		final Map<Integer, Document> result = new HashMap<>();
+		final Map<Integer, Document> result = new HashMap<Integer, Document>();
 		
 		iterable.forEach(new Block<Document>() {
 
