@@ -233,11 +233,16 @@ public class Project extends PipelineKeyword {
       super(KEYWORD, destName, object);
       this.coll = coll;
       Object value = object.get(keyword);
-      if (!(value instanceof List) || ((List) value).size() != 1) {
-        errorResult(coll, 16020, "the " + keyword + " operator requires an array of 1 operands");
+      field = parseOperand(value);
+    }
+
+    private String parseOperand(Object value) {
+      if (!(value instanceof String) && (!(value instanceof List) || ((List) value).size() != 1)) {
+        errorResult(coll, 16020, "the " + keyword + " operator requires an array of 1 operand");
       }
-      List values = (List) value;
-      field = (String) values.get(0);
+
+      Object parsedValue = (value instanceof List) ? ((List) value).get(0) : value;
+      return (String) parsedValue;
     }
 
     @Override

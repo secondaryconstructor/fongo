@@ -1081,6 +1081,47 @@ public class FongoAggregateProjectTest {
     collection.aggregate(fongoRule.parseList("[{$match: {liked: {$ne: null}}}, {$project: {viewCount: 1, likedCount: {$size: [\"$liked\"]}, liked: 1} }, {$sort: {viewCount: -1, likedCount: -1}}, {$limit: 1}]"));
   }
 
+  @Test
+  public void should_$size_work_for_string_values() {
+    // Given
+    DBCollection collection = fongoRule.newCollection();
+    Calendar calendar = getCalendarInstance();
+    calendar.set(Calendar.YEAR, 2014);
+    calendar.set(Calendar.DAY_OF_YEAR, 110);
+    calendar.set(Calendar.HOUR, 5);
+    calendar.set(Calendar.MINUTE, 6);
+    calendar.set(Calendar.SECOND, 7);
+    calendar.set(Calendar.MILLISECOND, 8);
+    collection.insert(new BasicDBObject("_id", 1).append("liked", Util.list("one", "two", "three")).append("viewCount", 2000));
+    collection.insert(new BasicDBObject("_id", 2).append("liked", Util.list("one", "two", "three", "four")).append("viewCount", 2000));
+    collection.insert(new BasicDBObject("_id", 3).append("liked", Util.list("one", "two", "three")).append("viewCount", 2000));
+    collection.insert(new BasicDBObject("_id", 4).append("liked", Util.list("one", "two", "three")));
+
+    // When
+    AggregationOutput output = collection.aggregate(fongoRule.parseList("[{$match: {liked: {$ne: null}}}, {$project: {viewCount: 1, likedCount: {$size: \"$liked\"}, liked: 1} }, {$sort: {viewCount: -1, likedCount: -1}}, {$limit: 1}]"));
+
+    // Then
+    Assertions.assertThat(output.results()).isEqualTo(fongoRule.parseList("[{\"_id\":2, \"liked\":[\"one\", \"two\", \"three\", \"four\"], \"viewCount\":2000, \"likedCount\":4}]"));
+  }
+
+  @Test
+  public void should_$size_give_an_exception_with_multiple_operands() {
+    // Given
+    DBCollection collection = fongoRule.newCollection();
+    Calendar calendar = getCalendarInstance();
+    calendar.set(Calendar.YEAR, 2014);
+    calendar.set(Calendar.DAY_OF_YEAR, 110);
+    calendar.set(Calendar.HOUR, 5);
+    calendar.set(Calendar.MINUTE, 6);
+    calendar.set(Calendar.SECOND, 7);
+    calendar.set(Calendar.MILLISECOND, 8);
+    collection.insert(new BasicDBObject("_id", 1).append("liked", Util.list("one", "two", "three")).append("arr", Util.list(1, 2, 3)).append("viewCount", 2000));
+
+    // When
+    ExpectedMongoException.expectMongoCommandException(exception, 16020);
+    collection.aggregate(fongoRule.parseList("[{$match: {liked: {$ne: null}}}, {$project: {viewCount: 1, likedCount: {$size: [\"$liked\", \"$arr\"]}, liked: 1} }, {$sort: {viewCount: -1, likedCount: -1}}, {$limit: 1}]"));
+  }
+
   private DBCollection createTestCollection() {
     DBCollection collection = fongoRule.newCollection();
     collection.insert(new BasicDBObject("myId", "p0").append("date", 1));
