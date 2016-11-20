@@ -263,3 +263,4 @@ Version 1.6.0 break compatibility with 2.12.X driver version.
 * [Avihai Berkovitz](https://github.com/aciduck)
 * [Kollivakkam Raghavan](https://github.com/krraghavan)
 * [Ann Katrin Gagnat](https://github.com/akgagnat)
+* [Nicola Viola](https://github.com/nicolaViola)
