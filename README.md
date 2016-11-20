@@ -265,3 +265,4 @@ Version 1.6.0 break compatibility with 2.12.X driver version.
 * [Ann Katrin Gagnat](https://github.com/akgagnat)
 * [Nicola Viola](https://github.com/nicolaViola)
 * [Michael Childs](https://github.com/mchildspelco)
+* [Dmitri Maksimov](https://github.com/mcdimus)
