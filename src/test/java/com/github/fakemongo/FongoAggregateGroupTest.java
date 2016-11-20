@@ -79,4 +79,33 @@ public class FongoAggregateGroupTest {
     // Then
     Assertions.assertThat(output.results()).containsAll(fongoRule.parseList("[{\"_id\":{\"groupType\":\"treatment\", \"City\":\"Paris\"}, \"average\":45.0}, {\"_id\":{\"groupType\":\"treatment\", \"City\":\"London\"}, \"average\":30.0}, {\"_id\":{\"groupType\":\"control\", \"City\":\"London\"}, \"average\":3.0}, {\"_id\":{\"groupType\":\"control\", \"City\":\"Paris\"}, \"average\":4.5}, {\"_id\":{\"groupType\":\"treatment\", \"City\":\"Madrid\"}, \"average\":15.0}, {\"_id\":{\"groupType\":\"control\", \"City\":\"Madrid\"}, \"average\":1.5}]"));
   }
+
+  @Test
+  public void group_ShouldWorkWithAllEntries_IfUnwindOperationWasAppliedBeforehand() {
+    // Given
+    DBCollection coll = fongoRule.newCollection();
+    fongoRule.insertJSON(coll, "[" +
+        "{ \"_id\" : \"1\", \"username\" : \"username1\", \"roles\" : [\"ROLE1\", \"ROLE2\"]},\n" +
+        "{ \"_id\" : \"2\", \"username\" : \"username2\", \"roles\" : [\"ROLE1\", \"ROLE3\"]},\n" +
+        "{ \"_id\" : \"3\", \"username\" : \"username3\", \"roles\" : [\"ROLE1\", \"ROLE4\"]},\n" +
+        "{ \"_id\" : \"4\", \"username\" : \"username4\", \"roles\" : [\"ROLE2\", \"ROLE3\"]},\n" +
+        "{ \"_id\" : \"5\", \"username\" : \"username5\", \"roles\" : [\"ROLE2\", \"ROLE4\", \"ROLE5\"]}" +
+        "]");
+
+    // When
+    AggregationOutput output = coll.aggregate(fongoRule.parseList("[" +
+        "{$unwind:\"$roles\"}, " +
+        "{$group:{_id:\"$roles\", count:{$sum:1}, users:{$push:\"$username\"}}}" +
+        "]"));
+
+    // Then
+    Assertions.assertThat(output.results()).containsAll(fongoRule.parseList("[" +
+        "{\"_id\":\"ROLE1\",\"count\":3,\"users\":[\"username1\",\"username2\",\"username3\"]}," +
+        "{\"_id\":\"ROLE2\",\"count\":3,\"users\":[\"username1\",\"username4\",\"username5\"]}," +
+        "{\"_id\":\"ROLE3\",\"count\":2,\"users\":[\"username2\",\"username4\"]}," +
+        "{\"_id\":\"ROLE4\",\"count\":2,\"users\":[\"username3\",\"username5\"]}," +
+        "{\"_id\":\"ROLE5\",\"count\":1,\"users\":[\"username5\"]}" +
+        "]"));
+  }
+
 }

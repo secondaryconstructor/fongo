@@ -202,10 +202,6 @@ public class Group extends PipelineKeyword {
       if (!mapping.containsKey(criteria)) {
         // Return all object we can group
         List<DBObject> newCollection = coll.find(criteria).toArray();
-        // Delete them from collection (optim for laaaaaarge collection)
-        for (DBObject o : newCollection) {
-          coll.remove(new BasicDBObject(FongoDBCollection.ID_FIELD_NAME, o.get(FongoDBCollection.ID_FIELD_NAME)));
-        }
         // Generate keyword
         DBObject key = keyForId(id, dbObject);
         // Save into mapping
