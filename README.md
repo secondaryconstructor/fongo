@@ -266,3 +266,4 @@ Version 1.6.0 break compatibility with 2.12.X driver version.
 * [Nicola Viola](https://github.com/nicolaViola)
 * [Michael Childs](https://github.com/mchildspelco)
 * [Dmitri Maksimov](https://github.com/mcdimus)
+* [Enrico Pelizzon](https://github.com/theimplementer)
