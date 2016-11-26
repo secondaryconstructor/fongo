@@ -7,9 +7,12 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.AsyncConnection;
 import com.mongodb.connection.BufferProvider;
 import com.mongodb.connection.Cluster;
+import com.mongodb.connection.ClusterConnectionMode;
 import com.mongodb.connection.ClusterDescription;
+import com.mongodb.connection.ClusterType;
 import com.mongodb.connection.Connection;
 import com.mongodb.connection.Server;
+import com.mongodb.connection.ServerConnectionState;
 import com.mongodb.connection.ServerDescription;
 import com.mongodb.internal.connection.PowerOfTwoBufferPool;
 import com.mongodb.operation.OperationExecutor;
@@ -18,6 +21,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.objenesis.ObjenesisHelper;
 import org.objenesis.ObjenesisStd;
 
 public class MockMongoClient extends MongoClient {
@@ -33,24 +37,13 @@ public class MockMongoClient extends MongoClient {
 
   public static MockMongoClient create(Fongo fongo) {
     // using objenesis here to prevent default constructor from spinning up background threads.
-    MockMongoClient client = new ObjenesisStd().getInstantiatorOf(MockMongoClient.class).newInstance();
+//    MockMongoClient client = new ObjenesisStd().getInstantiatorOf(MockMongoClient.class).newInstance();
+    MockMongoClient client = ObjenesisHelper.newInstance(MockMongoClient.class);
     client.options = new MongoOptions(clientOptions);
     client.fongo = fongo;
     client.setWriteConcern(clientOptions.getWriteConcern());
     client.setReadPreference(clientOptions.getReadPreference());
     client.readConcern = clientOptions.getReadConcern() == null ? ReadConcern.DEFAULT : clientOptions.getReadConcern();
-    try {
-      Mongo.class.getDeclaredMethod("getClusterDescription").setAccessible(true);
-      Mongo.class.getDeclaredMethod("getClusterDescription").
-      Mongo.class.getDeclaredField("cluster").setAccessible(true);
-      Mongo.class.getDeclaredField("cluster").set(client, client.getCluster());
-    } catch (IllegalAccessException e) {      e.printStackTrace();
-
-      e.printStackTrace();
-    } catch (NoSuchFieldException e) {
-    } catch (NoSuchMethodException e) {
-      e.printStackTrace();
-    }
     return client;
   }
 
@@ -70,6 +63,12 @@ public class MockMongoClient extends MongoClient {
   @Override
   public List<String> getDatabaseNames() {
     return fongo.getDatabaseNames();
+  }
+
+  @Override
+  public ReplicaSetStatus getReplicaSetStatus() {
+//    return new ReplicaSetStatus(getCluster());
+    return null;
   }
 
   @Override
@@ -112,12 +111,16 @@ public class MockMongoClient extends MongoClient {
     return Collections.singletonList(fongo.getServerAddress());
   }
 
+  private ServerDescription getServerDescription() {
+    return ServerDescription.builder().address(fongo.getServerAddress()).state(ServerConnectionState.CONNECTED).version(fongo.getServerVersion()).build();
+  }
+
   @Override
   public Cluster getCluster() {
     return new Cluster() {
       @Override
       public ClusterDescription getDescription() {
-        return null;
+        return new ClusterDescription(ClusterConnectionMode.SINGLE, ClusterType.STANDALONE, Collections.singletonList(getServerDescription()));
       }
 
       @Override

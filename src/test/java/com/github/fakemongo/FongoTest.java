@@ -3776,7 +3776,6 @@ public class FongoTest {
   public void should_getReplicaSetStatus_works() {
     final ReplicaSetStatus replicaSetStatus = fongoRule.getMongo().getReplicaSetStatus();
     Assertions.assertThat(replicaSetStatus).isNull();
-    System.out.println(replicaSetStatus);
 
   }
 
