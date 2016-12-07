@@ -72,7 +72,7 @@ public class FongoDBCollection extends DBCollection {
   // Fields/Index
   private final List<IndexAbstract> indexes = new ArrayList<IndexAbstract>();
   private final IndexAbstract _idIndex;
-  
+
   private final String SYSTEM_ELEMENT = "system.";
 
   public FongoDBCollection(FongoDB db, String name) {
@@ -735,6 +735,31 @@ public class FongoDBCollection extends DBCollection {
     }
   }
 
+  private static void pruneValuesAtPath(DBObject ret, List<String> path, int startIndex) {
+    String subKey = path.get(startIndex);
+
+    if (!ret.containsField(subKey)) {
+      return;
+    }
+
+    if (path.size() == startIndex + 1) {
+      ret.removeField(subKey);
+    } else {
+      Object value = ret.get(subKey);
+      if (ExpressionParser.isDbObject(value) && !(value instanceof List)) {
+        pruneValuesAtPath((BasicDBObject) value, path, startIndex + 1);
+      } else if (value instanceof List) {
+        BasicDBList list = (BasicDBList) value;
+
+        for (Object v : (List) value) {
+          if (ExpressionParser.isDbObject(v)) {
+            pruneValuesAtPath(ExpressionParser.toDbObject(v), path, startIndex + 1);
+          }
+        }
+      }
+    }
+  }
+
   private static BasicDBList getListForKey(BasicDBObject ret, String subKey) {
     BasicDBList list;
     if (ret.containsField(subKey)) {
@@ -827,7 +852,9 @@ public class FongoDBCollection extends DBCollection {
       } else if (ExpressionParser.isDbObject(projectionValue)) {
         project = true;
         projectionFields.add(projectionKey);
-      } else if (!projectionValue.toString().equals("text")) {
+      } else if (projectionValue.toString().equals("text")) {
+        included = true;
+      } else {
         final String msg = "Projection `" + projectionKey
             + "' has a value that Fongo doesn't know how to handle: " + projectionValue
             + " (" + (projectionValue == null ? " " : projectionValue.getClass() + ")");
@@ -871,10 +898,10 @@ public class FongoDBCollection extends DBCollection {
     }
 
     for (Tuple2<List<String>, Boolean> projection : projections) {
-      if (projection._1.size() == 1 && !projection._2) {
-        ret.removeField(projection._1.get(0));
-      } else {
+      if (projection._2) {
         addValuesAtPath(ret, result, projection._1, 0);
+      } else {
+        pruneValuesAtPath(ret, projection._1, 0);
       }
     }
 
