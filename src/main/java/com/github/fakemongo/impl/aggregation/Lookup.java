@@ -1,15 +1,20 @@
 package com.github.fakemongo.impl.aggregation;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.fakemongo.impl.ExpressionParser;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 /**
  * @author Kollivakkam Raghavan
@@ -45,13 +50,14 @@ public class Lookup extends PipelineKeyword {
     DBCursor parentItems = parentColl.find();
     // can't use lambdas
     Iterator<DBObject> iterator = parentItems.iterator();
-    Map<String, DBObject> parentMap = new HashMap<String, DBObject>();
+    Map<Object, List<DBObject>> parentMap = new HashMap<Object, List<DBObject>>();
+    List<DBObject> parentsWithLocalField = new ArrayList<DBObject>();
     List<DBObject> parentsWithMissingLocalField = new ArrayList<DBObject>();
     // go through all parent items - put a list of DBObjects for the children
     while (iterator.hasNext()) {
       DBObject parentItem = iterator.next();
-      String localFieldValue = (String) parentItem.get(localField);
-      if (localFieldValue == null || "".equals(localField.trim())) {
+      Object localFieldValue = parentItem.get(localField);
+      if (localFieldValue == null || "".equals(localField.toString().trim())) {
         parentItem.put(as, new ArrayList<DBObject>());
         parentsWithMissingLocalField.add(parentItem);
       }
@@ -61,7 +67,11 @@ public class Lookup extends PipelineKeyword {
           childItems = new ArrayList<DBObject>();
           parentItem.put(as, childItems);
         }
-        parentMap.put(localFieldValue, parentItem);
+        if(!parentMap.containsKey(localFieldValue)) {
+            parentMap.put(localFieldValue, new ArrayList<DBObject>());
+        }
+        parentMap.get(localFieldValue).add(parentItem);
+        parentsWithLocalField.add(parentItem);
       }
     }
     // now loop through the children item and add them to the parent
@@ -71,26 +81,27 @@ public class Lookup extends PipelineKeyword {
     Iterator<DBObject> childIterator = childItems.iterator();
     while (childIterator.hasNext()) {
       DBObject childItem = childIterator.next();
-      String parentOid = (String) childItem.get(foreignField);
+      Object parentOid = childItem.get(foreignField);
       if (parentOid == null) {
         LOG.warn("Ignoring null parent id");
       }
       else {
-        DBObject parent = parentMap.get(parentOid);
-        if (parent == null) {
+        if(parentMap.containsKey(parentOid)) {
+          for(DBObject parent: parentMap.get(parentOid)) {
+            LOG.debug("Adding child with id {} to parent wth id {}", childItem.get(ID), parentOid);
+            List<DBObject> childObjects = (List<DBObject>) parent.get(as);
+            Assert.assertNotNull("Unexpected null value", childObjects);
+            childObjects.add(childItem);
+          }
+        } else {
           LOG.warn("Ignoring missing parent with id {}", parentOid);
-        }
-        else {
-          LOG.debug("Adding child with id {} to parent wth id {}", childItem.get(ID), parentOid);
-          List<DBObject> childObjects = (List<DBObject>) parent.get(as);
-          Assert.assertNotNull("Unexpected null value", childObjects);
-          childObjects.add(childItem);
         }
       }
     }
-    List<DBObject> retval = new ArrayList<DBObject>();
-    retval.addAll(parentMap.values());
+    List<DBObject> retval = new ArrayList<DBObject>(parentsWithLocalField.size() + parentsWithMissingLocalField.size());
+    retval.addAll(parentsWithLocalField);
     retval.addAll(parentsWithMissingLocalField);
     return retval;
   }
+
 }
