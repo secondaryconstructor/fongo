@@ -472,7 +472,7 @@ public class FongoConnection implements Connection {
       return reencode(commandResultDecoder, "cursor", new BasicDBObject("id", 0L).append("ns", db.getName() + ".dontkown").append("firstBatch", result));
     } else if (command.containsKey("dropDatabase")) {
       db.dropDatabase();
-      return null;
+      return (T) new BsonDocument("ok", new BsonInt32(1));
     } else if (command.containsKey("ping")) {
       return (T) new Document("ok", 1.0);
     } else if (command.containsKey("insert")) {

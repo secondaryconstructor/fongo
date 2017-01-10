@@ -9,6 +9,7 @@ import com.mongodb.connection.BufferProvider;
 import com.mongodb.connection.Cluster;
 import com.mongodb.connection.ClusterConnectionMode;
 import com.mongodb.connection.ClusterDescription;
+import com.mongodb.connection.ClusterSettings;
 import com.mongodb.connection.ClusterType;
 import com.mongodb.connection.Connection;
 import com.mongodb.connection.Server;
@@ -103,7 +104,7 @@ public class MockMongoClient extends MongoClient {
 
   @Override
   public List<ServerAddress> getAllAddress() {
-    return super.getAllAddress();
+    return getServerAddressList();
   }
 
   @Override
@@ -118,6 +119,16 @@ public class MockMongoClient extends MongoClient {
   @Override
   public Cluster getCluster() {
     return new Cluster() {
+      @Override
+      public ClusterSettings getSettings() {
+        return ClusterSettings.builder().hosts(getServerAddressList())
+            .requiredReplicaSetName(options.getRequiredReplicaSetName())
+//            .serverSelectionTimeout(options.getServerSelectionTimeout(), MILLISECONDS)
+//            .serverSelector(createServerSelector(options))
+            .description(options.getDescription())
+            .maxWaitQueueSize(10).build();
+      }
+
       @Override
       public ClusterDescription getDescription() {
         return new ClusterDescription(ClusterConnectionMode.SINGLE, ClusterType.STANDALONE, Collections.singletonList(getServerDescription()));

@@ -577,7 +577,7 @@ public class FongoDBCollection extends DBCollection {
 
   @Override
   public DBCursor find(final DBObject query) {
-    return find(query, null);
+    return find(query, (DBObject) null);
   }
 
   public DBCursor find(final DBObject query, final DBObject projection) {
