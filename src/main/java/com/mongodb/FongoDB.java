@@ -21,6 +21,7 @@ import com.github.fakemongo.Fongo;
 import com.github.fakemongo.impl.Aggregator;
 import com.github.fakemongo.impl.ExpressionParser;
 import com.github.fakemongo.impl.geo.GeoUtil;
+import com.mongodb.connection.ServerVersion;
 import com.mongodb.util.JSON;
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -440,6 +441,28 @@ public class FongoDB extends DB {
   public WriteConcernException writeConcernException(int code, String err) {
     final BsonDocument result = bsonResultNotOk(code, err);
     return new WriteConcernException(result, fongo.getServerAddress(), WriteConcernResult.unacknowledged());
+  }
+
+  public WriteConcernException duplicateKeyException(int code, String err, DBObject oldObject) {
+    if(serverIsAtLeastThreeDotThree(this.fongo)) {
+      throw duplicateKeyException(code, err);
+    } else {
+      if (oldObject == null) {
+        // insert
+        throw duplicateKeyException(code, err);
+      } else {
+        // update (MongoDB throws a different exception in case of an update, see issue #200)
+        throw mongoCommandException(code, err);
+      }
+    }
+  }
+
+  private boolean serverIsAtLeastThreeDotThree(Fongo fongo) {
+    return serverIsAtLeastVersion(fongo, Fongo.V3_3_SERVER_VERSION);
+  }
+
+  static boolean serverIsAtLeastVersion(Fongo fongo, final ServerVersion serverVersion) {
+    return fongo.getServerVersion().compareTo(serverVersion) >= 0;
   }
 
   public WriteConcernException duplicateKeyException(int code, String err) {

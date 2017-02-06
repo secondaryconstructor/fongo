@@ -47,6 +47,7 @@ public class Fongo implements OperationExecutor {
   private final static Logger LOG = LoggerFactory.getLogger(Fongo.class);
 
   public static final ServerVersion V3_2_SERVER_VERSION = new ServerVersion(3, 2);
+  public static final ServerVersion V3_3_SERVER_VERSION = new ServerVersion(3, 3);
   public static final ServerVersion V3_SERVER_VERSION = new ServerVersion(3, 0);
   public static final ServerVersion OLD_SERVER_VERSION = new ServerVersion(0, 0);
   public static final ServerVersion DEFAULT_SERVER_VERSION = V3_2_SERVER_VERSION;
