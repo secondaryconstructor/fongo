@@ -1130,6 +1130,16 @@ public abstract class AbstractFongoV3Test {
   }
 
   @Test
+  public void should_command_create_collection() {
+    // Given
+    // When
+    fongoRule.getDatabase().createCollection("hello");
+
+    // Then
+    Assertions.assertThat(fongoRule.getDatabase().getCollection("hello")).isNotNull();
+  }
+
+  @Test
   public void shouldFindOneDocumentWithoutTheOptionalFieldWithNoIndex() {
     // Given
     MongoCollection<Document> collection = newCollection();
