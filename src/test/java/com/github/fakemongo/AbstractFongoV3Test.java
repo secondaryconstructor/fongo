@@ -390,19 +390,6 @@ public abstract class AbstractFongoV3Test {
   }
 
   @Test
-  public void insertOneWithDuplicateValueForUniqueColumn_throwsMongoCommandException() {
-    // Given
-    MongoCollection collection = newCollection();
-    collection.createIndex(new Document("a", 1), new IndexOptions().name("a").unique(true));
-    collection.insertOne(new Document("_id", 1).append("a", 1));
-    collection.insertOne(new Document("_id", 2).append("a", 2));
-
-    // When
-    exception.expect(MongoCommandException.class);
-    collection.findOneAndUpdate(docId(2), new Document("$set", new Document("a", 1)));
-  }
-
-  @Test
   public void deleteMany_remove_many() {
     // Given
     MongoCollection collection = newCollection();
@@ -1186,7 +1173,7 @@ public abstract class AbstractFongoV3Test {
     Assertions.assertThat(collection.count()).isEqualTo(1);
   }
 
-  private Document docId(final Object value) {
+  protected static Document docId(final Object value) {
     return new Document("_id", value);
   }
 
