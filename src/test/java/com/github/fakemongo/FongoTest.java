@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
 
 public class FongoTest {
 
-  public final FongoRule fongoRule = new FongoRule(&false);
+  public final FongoRule fongoRule = new FongoRule(false);
 
   public final ExpectedException exception = ExpectedException.none();
 
@@ -3922,6 +3922,83 @@ public class FongoTest {
 
     // Then
     Assertions.assertThat(collection.find().toArray()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"persons\" : [ {id:1}, {id:2}, {id:1} ] }]"));
+  }
+
+  @Test
+  public void should_nested_works_on_nested() {
+    // Given
+    DBCollection collection = newCollection();
+    this.fongoRule.insertJSON(collection, "["
+        + "{\n"
+        + " _id: 4,\n"
+        + " zipcode: 63109,\n"
+        + " students: [\n"
+        + "              { nested: [\"barney\", \"stinson\"]}\n"
+        + "           ]\n"
+        + "}]\n");
+
+    // When
+    collection.update(new BasicDBObject("_id", 4), new BasicDBObject("$set", new BasicDBObject("students.0.nested.1", "himym")));
+
+    // Then
+    Assertions.assertThat(collection.find(new BasicDBObject("_id", 4)).toArray()).isEqualTo(fongoRule.parseList("[{\"_id\":4, \"zipcode\":63109, \"students\":[{\"nested\":[\"barney\", \"himym\"]}]}]"));
+  }
+
+
+  // https://docs.mongodb.com/manual/reference/operator/update/positional/
+  @Test
+  public void should_positional_operator_work_with_array() {
+    // Given
+    DBCollection collection = newCollection();
+    this.fongoRule.insertJSON(collection, "[{\n" +
+        "  _id: 4,\n" +
+        "  grades: [\n" +
+        "     { grade: 80, mean: 75, std: [0,1,2] },\n" +
+        "     { grade: 85, mean: 90, std: [3,4,5] },\n" +
+        "     { grade: 90, mean: 85, std: [5,6,8] }\n" +
+        "  ]\n" +
+        "}]\n");
+
+    // When
+    collection.update(new BasicDBObject("_id", 4).append("grades.grade", 85), new BasicDBObject("$set", new BasicDBObject("grades.$.std.1", 6)));
+
+    // Then
+    Assertions.assertThat(collection.find(new BasicDBObject("_id", 4)).toArray()).isEqualTo(fongoRule.parseList("[{\n" +
+        "  _id: 4,\n" +
+        "  grades: [\n" +
+        "     { grade: 80, mean: 75, std: [0,1,2] },\n" +
+        "     { grade: 85, mean: 90, std: [3,6,5] },\n" +
+        "     { grade: 90, mean: 85, std: [5,6,8] }\n" +
+        "  ]\n" +
+        "}]\n"));
+  }
+  
+  // https://docs.mongodb.com/manual/reference/operator/update/positional/
+  @Test
+  public void should_positional_operator() {
+    // Given
+    DBCollection collection = newCollection();
+    this.fongoRule.insertJSON(collection, "[{\n" +
+        "  _id: 4,\n" +
+        "  grades: [\n" +
+        "     { grade: 80, mean: 75, std: 8 },\n" +
+        "     { grade: 85, mean: 90, std: 5 },\n" +
+        "     { grade: 90, mean: 85, std: 3 }\n" +
+        "  ]\n" +
+        "}]\n");
+
+    // When
+    collection.update(new BasicDBObject("_id", 4).append("grades.grade", 85), new BasicDBObject("$set", new BasicDBObject("grades.$.std", 6)));
+
+    // Then
+    Assertions.assertThat(collection.find(new BasicDBObject("_id", 4)).toArray()).isEqualTo(fongoRule.parseList("[{\n" +
+        "  _id: 4,\n" +
+        "  grades: [\n" +
+        "     { grade: 80, mean: 75, std: 8 },\n" +
+        "     { grade: 85, mean: 90, std: 6 },\n" +
+        "     { grade: 90, mean: 85, std: 3 }\n" +
+        "  ]\n" +
+        "}]\n"));
   }
 
   static class Seq {
