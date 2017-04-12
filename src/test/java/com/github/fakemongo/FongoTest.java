@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
 
 public class FongoTest {
 
-  public final FongoRule fongoRule = new FongoRule(false);
+  public final FongoRule fongoRule = new FongoRule(&false);
 
   public final ExpectedException exception = ExpectedException.none();
 
@@ -2522,8 +2522,8 @@ public class FongoTest {
         "{ \"_id\" : 3, \"item\" : \"xyz\", \"total\" : 5 }]"));
   }
 
-//  @Test
-//  public void should_$substract_in_group_handle_expression() {
+  //  @Test
+//  public void should_$subtract_in_group_handle_expression() {
 //    // Given
 //    DBCollection collection = newCollection();
 //    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"price\" : 10, \"fee\" : 2, \"discount\" : 5, \"date\" : \"2014-03-01T08:00:00Z\" },\n" +
@@ -2539,7 +2539,7 @@ public class FongoTest {
 //  }
 //
   @Test
-  public void should_$substract_in_group_handle_expression() {
+  public void should_$subtract_in_group_handle_expression() {
     // Given
     DBCollection collection = newCollection();
     collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"price\" : 10, \"fee\" : 2, \"discount\" : 5, \"date\" : \"2014-03-01T08:00:00Z\" },\n" +
@@ -3897,6 +3897,32 @@ public class FongoTest {
 
   }
 
+  @Test
+  public void should_$pullAll_remove_all_numbers() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ _id: 1, scores: [ 0, 2, 5, 5, 1, 0 ] }]"));
+
+    // When
+    collection.update(new BasicDBObject("_id", 1), fongoRule.parseDBObject("{ $pullAll: { scores: [ 0, 5 ] } } "));
+
+    // Then
+    Assertions.assertThat(collection.find().toArray()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"scores\" : [ 2, 1 ] }]"));
+  }
+
+
+  @Test
+  public void should_$pullAll_remove_all_objects() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ _id: 1, persons: [ {id:1}, {id:2}, {id:5}, {id:5}, {id:1}, {id:0} ] }]"));
+
+    // When
+    collection.update(new BasicDBObject("_id", 1), fongoRule.parseDBObject("{ $pullAll: { persons: [ {id:0}, {id:5} ] } } "));
+
+    // Then
+    Assertions.assertThat(collection.find().toArray()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"persons\" : [ {id:1}, {id:2}, {id:1} ] }]"));
+  }
 
   static class Seq {
     Object[] data;
