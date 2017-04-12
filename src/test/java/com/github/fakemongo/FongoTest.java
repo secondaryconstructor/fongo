@@ -2522,6 +2522,38 @@ public class FongoTest {
         "{ \"_id\" : 3, \"item\" : \"xyz\", \"total\" : 5 }]"));
   }
 
+//  @Test
+//  public void should_$substract_in_group_handle_expression() {
+//    // Given
+//    DBCollection collection = newCollection();
+//    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"price\" : 10, \"fee\" : 2, \"discount\" : 5, \"date\" : \"2014-03-01T08:00:00Z\" },\n" +
+//        "{ \"_id\" : 2, \"item\" : \"jkl\", \"price\" : 20, \"fee\" : 1, \"discount\" : 2, \"date\" : \"2014-03-01T09:00:00Z\" }\n\n]"));
+//
+//    // When
+//    AggregationOutput result = collection
+//        .aggregate(fongoRule.parseList("[{ $project: { item: 1, total: { $subtract: [ { $add: [ \"$price\", \"$fee\" ] }, \"$discount\" ] } } }]"));
+//
+//    // Then
+//    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"total\" : 7 },\n" +
+//        "{ \"_id\" : 2, \"item\" : \"jkl\", \"total\" : 19 }]"));
+//  }
+//
+  @Test
+  public void should_$substract_in_group_handle_expression() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"price\" : 10, \"fee\" : 2, \"discount\" : 5, \"date\" : \"2014-03-01T08:00:00Z\" },\n" +
+        "{ \"_id\" : 2, \"item\" : \"jkl\", \"price\" : 20, \"fee\" : 1, \"discount\" : 2, \"date\" : \"2014-03-01T09:00:00Z\" }\n\n]"));
+
+    // When
+    AggregationOutput result = collection
+        .aggregate(fongoRule.parseList("[{ $project: { item: 1, total: { $subtract: [ \"$price\", \"$discount\" ] } } }]"));
+
+    // Then
+    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"item\" : \"abc\", \"total\" : 5 },\n" +
+        "{ \"_id\" : 2, \"item\" : \"jkl\", \"total\" : 18 }]"));
+  }
+
   // #44 https://github.com/fakemongo/fongo/issues/44
   @Test
   public void should_string_id_not_retrieve_objectId() {

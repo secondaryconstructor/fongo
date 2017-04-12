@@ -419,6 +419,16 @@ public final class Util {
     }
   }
 
+  public static Number genericSub(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return left.doubleValue() - right.doubleValue();
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return left.intValue() - right.intValue();
+    } else {
+      return left.longValue() - right.longValue();
+    }
+  }
+
   // http://docs.mongodb.org/manual/faq/developers/#faq-developers-multiplication-type-conversion
   public static Number genericMul(Number left, Number right) {
     if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {

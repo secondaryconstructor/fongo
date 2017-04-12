@@ -55,6 +55,7 @@ public class Project extends PipelineKeyword {
       projectedAbstractMap.put(ProjectedToMod.KEYWORD, ProjectedToMod.class);
       projectedAbstractMap.put(ProjectedToMultiply.KEYWORD, ProjectedToMultiply.class);
       projectedAbstractMap.put(ProjectedToAdd.KEYWORD, ProjectedToAdd.class);
+      projectedAbstractMap.put(ProjectedToSubtract.KEYWORD, ProjectedToSubtract.class);
       projectedAbstractMap.put(ProjectedDateDayOfYear.KEYWORD, ProjectedDateDayOfYear.class);
       projectedAbstractMap.put(ProjectedDateDayOfMonth.KEYWORD, ProjectedDateDayOfMonth.class);
       projectedAbstractMap.put(ProjectedDateDayOfWeek.KEYWORD, ProjectedDateDayOfWeek.class);
@@ -582,9 +583,8 @@ public class Project extends PipelineKeyword {
     }
   }
 
-  static class ProjectedToMod extends ProjectedAbstract<ProjectedToDivide> {
+  static class ProjectedToMod extends ProjectedAbstract<ProjectedToMod> {
     static final String KEYWORD = "$mod";
-
 
     private final Object expression1;
     private final Object expression2;
@@ -618,7 +618,7 @@ public class Project extends PipelineKeyword {
     }
   }
 
-  static class ProjectedToMultiply extends ProjectedAbstract<ProjectedToDivide> {
+  static class ProjectedToMultiply extends ProjectedAbstract<ProjectedToMultiply> {
     static final String KEYWORD = "$multiply";
 
 
@@ -654,7 +654,7 @@ public class Project extends PipelineKeyword {
     }
   }
 
-  static class ProjectedToAdd extends ProjectedAbstract<ProjectedToDivide> {
+  static class ProjectedToAdd extends ProjectedAbstract<ProjectedToAdd> {
     static final String KEYWORD = "$add";
 
 
@@ -687,6 +687,42 @@ public class Project extends PipelineKeyword {
         for (int i = 1; i < expressions.size(); i++) {
           add = Util.genericAdd(add, (Number) extractValue(object, expressions.get(i)));
         }
+      }
+      result.put(destName, add);
+    }
+  }
+
+  static class ProjectedToSubtract extends ProjectedAbstract<ProjectedToSubtract> {
+    static final String KEYWORD = "$subtract";
+
+
+    private final List<Object> expressions;
+
+    public ProjectedToSubtract(String destName, DBCollection coll, DBObject object) {
+      this(KEYWORD, destName, coll, object);
+    }
+
+    ProjectedToSubtract(String keyword, String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object value = object.get(keyword);
+      if (!(value instanceof List) || ((List) value).size() != 2) {
+        errorResult(coll, 16020, "Expression " + keyword + " takes exactly 2 arguments.");
+      }
+      expressions = (List) value;
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      for (Object expression : expressions) {
+        createMapping(coll, projectResult, projectedFields, destName, expression, namespace, this);
+      }
+    }
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      Number add = extractValue(object, expressions.get(0));
+      for (int i = 1; i < expressions.size(); i++) {
+        add = Util.genericSub(add, (Number) extractValue(object, expressions.get(i)));
       }
       result.put(destName, add);
     }
