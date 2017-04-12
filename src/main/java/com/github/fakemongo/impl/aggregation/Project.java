@@ -52,6 +52,7 @@ public class Project extends PipelineKeyword {
       projectedAbstractMap.put(ProjectedToLower.KEYWORD, ProjectedToLower.class);
       projectedAbstractMap.put(ProjectedToUpper.KEYWORD, ProjectedToUpper.class);
       projectedAbstractMap.put(ProjectedToDivide.KEYWORD, ProjectedToDivide.class);
+      projectedAbstractMap.put(ProjectedToAdd.KEYWORD, ProjectedToAdd.class);
       projectedAbstractMap.put(ProjectedDateDayOfYear.KEYWORD, ProjectedDateDayOfYear.class);
       projectedAbstractMap.put(ProjectedDateDayOfMonth.KEYWORD, ProjectedDateDayOfMonth.class);
       projectedAbstractMap.put(ProjectedDateDayOfWeek.KEYWORD, ProjectedDateDayOfWeek.class);
@@ -576,6 +577,44 @@ public class Project extends PipelineKeyword {
       final Number left = extractValue(object, expression1);
       final Number right = extractValue(object, expression2);
       result.put(destName, Util.genericDiv(left, right));
+    }
+  }
+
+  static class ProjectedToAdd extends ProjectedAbstract<ProjectedToDivide> {
+    static final String KEYWORD = "$add";
+
+
+    private final List<Object> expressions;
+
+    public ProjectedToAdd(String destName, DBCollection coll, DBObject object) {
+      this(KEYWORD, destName, coll, object);
+    }
+
+    ProjectedToAdd(String keyword, String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object value = object.get(keyword);
+      if (!(value instanceof List) || ((List) value).size() < 1) {
+        errorResult(coll, 16020, "the " + keyword + " operator requires an array with at least 1 operand");
+      }
+      expressions = (List) value;
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      for (Object expression : expressions) {
+        createMapping(coll, projectResult, projectedFields, destName, expression, namespace, this);
+      }
+    }
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      Number add = extractValue(object, expressions.get(0));
+      if (expressions.size() > 1) {
+        for (int i = 1; i < expressions.size(); i++) {
+          add = Util.genericAdd(add, (Number) extractValue(object, expressions.get(i)));
+        }
+      }
+      result.put(destName, add);
     }
   }
 
