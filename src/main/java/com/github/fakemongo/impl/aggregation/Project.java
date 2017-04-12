@@ -618,18 +618,18 @@ public class Project extends PipelineKeyword {
     }
   }
 
-  static class ProjectedToMod extends ProjectedAbstract<ProjectedToDivide> {
-    static final String KEYWORD = "$mod";
+  static class ProjectedToMultiply extends ProjectedAbstract<ProjectedToDivide> {
+    static final String KEYWORD = "$multiply";
 
 
     private final Object expression1;
     private final Object expression2;
 
-    public ProjectedToMod(String destName, DBCollection coll, DBObject object) {
+    public ProjectedToMultiply(String destName, DBCollection coll, DBObject object) {
       this(KEYWORD, destName, coll, object);
     }
 
-    ProjectedToMod(String keyword, String destName, DBCollection coll, DBObject object) {
+    ProjectedToMultiply(String keyword, String destName, DBCollection coll, DBObject object) {
       super(KEYWORD, destName, object);
       Object value = object.get(keyword);
       if (!(value instanceof List) || ((List) value).size() != 2) {
@@ -650,7 +650,7 @@ public class Project extends PipelineKeyword {
     public void unapply(DBObject result, DBObject object, String key) {
       final Number left = extractValue(object, expression1);
       final Number right = extractValue(object, expression2);
-      result.put(destName, Util.genericMod(left, right));
+      result.put(destName, Util.genericMul(left, right));
     }
   }
 
