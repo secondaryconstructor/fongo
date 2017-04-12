@@ -1,6 +1,9 @@
 package com.github.fakemongo.impl;
 
 import com.github.fakemongo.FongoException;
+import static com.github.fakemongo.impl.Util.genericMax;
+import static com.github.fakemongo.impl.Util.genericMin;
+import static com.github.fakemongo.impl.Util.genericMul;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -148,73 +151,6 @@ public class UpdateEngine {
     }
   }
 
-  Number genericAdd(Number left, Number right) {
-    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
-      return left.doubleValue() + right.doubleValue();
-    } else if (left instanceof Integer && right instanceof Integer) {
-      return left.intValue() + right.intValue();
-    } else {
-      return left.longValue() + right.longValue();
-    }
-  }
-
-  // http://docs.mongodb.org/manual/faq/developers/#faq-developers-multiplication-type-conversion
-  Number genericMul(Number left, Number right) {
-    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
-      return left.doubleValue() * (right.doubleValue());
-    } else if (left instanceof Integer && right instanceof Integer) {
-      return left.intValue() * right.intValue();
-    } else {
-      return left.longValue() * right.longValue();
-    }
-  }
-
-  Number genericMax(Number left, Number right) {
-    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
-      return Math.max(left.doubleValue(), right.doubleValue());
-    } else if (left instanceof Integer && right instanceof Integer) {
-      return Math.max(left.intValue(), right.intValue());
-    } else {
-      return Math.max(left.longValue(), right.longValue());
-    }
-  }
-
-  Date genericMax(Date left, Date right) {
-    if (left == null) {
-      return right;
-    }
-    if (right == null) {
-      return left;
-    }
-    return left.after(right) ? left : right;
-  }
-
-  Number genericMin(Number left, Number right) {
-    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
-      return Math.min(left.doubleValue(), right.doubleValue());
-    } else if (left instanceof Integer && right instanceof Integer) {
-      return Math.min(left.intValue(), right.intValue());
-    } else {
-      return Math.min(left.longValue(), right.longValue());
-    }
-  }
-
-  Date genericMin(Date left, Date right) {
-    if (left == null) {
-      return right;
-    }
-    if (right == null) {
-      return left;
-    }
-    return left.before(right) ? left : right;
-  }
-
-  BasicDBList asDbList(Object... objects) {
-    BasicDBList dbList = new BasicDBList();
-    Collections.addAll(dbList, objects);
-    return dbList;
-  }
-
   final List<BasicUpdate> commands = Arrays.<BasicUpdate>asList(
       new BasicUpdate("$set", true) {
         @Override
@@ -291,7 +227,7 @@ public class UpdateEngine {
             subObject.put(subKey, updateNumber);
           } else {
             Number oldNumber = expressionParser.typecast(subKey + " value", oldValue, Number.class);
-            subObject.put(subKey, genericAdd(oldNumber, updateNumber));
+            subObject.put(subKey, Util.genericAdd(oldNumber, updateNumber));
           }
         }
       },

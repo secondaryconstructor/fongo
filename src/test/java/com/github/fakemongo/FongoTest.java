@@ -2420,6 +2420,40 @@ public class FongoTest {
         "{ \"_id\" : 3, \"item\" : \"ijk123\", \"qty\" : 12 }]"));
   }
 
+  // https://github.com/fakemongo/fongo/issues/273
+  // https://docs.mongodb.com/manual/reference/operator/aggregation/divide/
+  @Test
+  public void should_$divide_in_group_work_with_expression() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"name\" : \"A\", \"hours\" : 80, \"resources\" : 7 },\n" +
+        "{ \"_id\" : 2, \"name\" : \"B\", \"hours\" : 40, \"resources\" : 4 }]"));
+
+    // When
+    AggregationOutput result = collection
+        .aggregate(fongoRule.parseList("[{ $project: { name: 1, workdays: { $divide: [ \"$hours\", 8 ] } } }]"));
+
+    // Then
+    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"name\" : \"A\", \"workdays\" : 10 },\n" +
+        "{ \"_id\" : 2, \"name\" : \"B\", \"workdays\" : 5 }\n]"));
+  }
+
+  @Test
+  public void should_$divide_in_group_work_with_expression2() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"name\" : \"A\", \"hours\" : 80, \"resources\" : 7 },\n" +
+        "{ \"_id\" : 2, \"name\" : \"B\", \"hours\" : 40, \"resources\" : 4 }]"));
+
+    // When
+    AggregationOutput result = collection
+        .aggregate(fongoRule.parseList("[{ $project: { name: 1, workdays: { $divide: [ 80, \"$hours\" ] } } }]"));
+
+    // Then
+    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"name\" : \"A\", \"workdays\" : 1 },\n" +
+        "{ \"_id\" : 2, \"name\" : \"B\", \"workdays\" : 2 }\n]"));
+  }
+
   // https://github.com/fakemongo/fongo/issues/36
   @Test
   public void should_$divide_in_group_work_well() {
@@ -2432,8 +2466,7 @@ public class FongoTest {
         .aggregate(fongoRule.parseList("[{ $project: { bla: {$divide: [4,2]} } }]"));
 
     // Then
-//    System.out.println(Lists.newArrayList(result.results())); // { "_id" : { "$oid" : "5368e0f3cf5a47d5a22d7b75"}}
-    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1 , \"bla\" : 2.0}]"));
+    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1 , \"bla\" : 2}]"));
   }
 
   // #44 https://github.com/fakemongo/fongo/issues/44

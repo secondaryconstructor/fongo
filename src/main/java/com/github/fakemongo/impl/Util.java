@@ -408,4 +408,75 @@ public final class Util {
     }
     return list;
   }
+
+  public static Number genericAdd(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return left.doubleValue() + right.doubleValue();
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return left.intValue() + right.intValue();
+    } else {
+      return left.longValue() + right.longValue();
+    }
+  }
+
+  // http://docs.mongodb.org/manual/faq/developers/#faq-developers-multiplication-type-conversion
+  public static Number genericMul(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return left.doubleValue() * (right.doubleValue());
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return left.intValue() * right.intValue();
+    } else {
+      return left.longValue() * right.longValue();
+    }
+  }
+
+  public static Number genericDiv(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return left.doubleValue() / (right.doubleValue());
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return left.intValue() / right.intValue();
+    } else {
+      return left.longValue() / right.longValue();
+    }
+  }
+
+  public static Number genericMax(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return Math.max(left.doubleValue(), right.doubleValue());
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return Math.max(left.intValue(), right.intValue());
+    } else {
+      return Math.max(left.longValue(), right.longValue());
+    }
+  }
+
+  public static Date genericMax(Date left, Date right) {
+    if (left == null) {
+      return right;
+    }
+    if (right == null) {
+      return left;
+    }
+    return left.after(right) ? left : right;
+  }
+
+  public static Number genericMin(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return Math.min(left.doubleValue(), right.doubleValue());
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return Math.min(left.intValue(), right.intValue());
+    } else {
+      return Math.min(left.longValue(), right.longValue());
+    }
+  }
+
+  public static Date genericMin(Date left, Date right) {
+    if (left == null) {
+      return right;
+    }
+    if (right == null) {
+      return left;
+    }
+    return left.before(right) ? left : right;
+  }
 }
