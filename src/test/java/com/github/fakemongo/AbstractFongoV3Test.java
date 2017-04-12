@@ -1187,7 +1187,7 @@ public abstract class AbstractFongoV3Test {
     return new Document("_id", value);
   }
 
-  private <T> List<T> toList(final MongoIterable<T> iterable) {
+  private static <T> List<T> toList(final MongoIterable<T> iterable) {
     return iterable.into(new ArrayList<T>());
   }
 
