@@ -425,7 +425,7 @@ public class Group extends PipelineKeyword {
       String field = value.toString().substring(1);
       DBCursor cursor = coll.find();
       while (cursor.hasNext()) {
-        result = Util.extractField(cursor.next(), field);
+        result = extractFieldOrAggregationException(cursor.next(), field);
         if (first) {
           break;
         }
@@ -453,7 +453,7 @@ public class Group extends PipelineKeyword {
       String field = value.toString().substring(1);
       DBCursor cursor = coll.find();
       while (cursor.hasNext()) {
-        Object fieldValue = Util.extractField(cursor.next(), field);
+        Object fieldValue = extractFieldOrAggregationException(cursor.next(), field);
         if (!uniqueness || !result.contains(fieldValue)) {
           result.add(fieldValue);
         }
@@ -474,6 +474,7 @@ public class Group extends PipelineKeyword {
    * @param valueComparable 0 for equals, -1 for min, +1 for max
    * @return
    */
+
   private static Object minmax(DBCollection coll, Object value, int valueComparable) {
     if (value.toString().startsWith("$")) {
       String field = value.toString().substring(1);
@@ -537,6 +538,13 @@ public class Group extends PipelineKeyword {
 //    return other;
 //  }
 // --Commented out by Inspection STOP (05/11/13 12:10)
+
+  public static <T> T extractFieldOrAggregationException(DBObject object, String field) {
+    if ("$ROOT".equals(field)) {
+      return (T) object;
+    }
+    return Util.extractField(object, field);
+  }
 
   @Override
   public String getKeyword() {

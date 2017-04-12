@@ -108,4 +108,30 @@ public class FongoAggregateGroupTest {
         "]"));
   }
 
+  @Test
+  public void should_$first_handle_$$ROOT_value() {
+    // Given
+    DBCollection coll = fongoRule.newCollection();
+    fongoRule.insertJSON(coll, "[{ \"_id\" : \"1\", \"test\" : 1.0, \"City\" : \"Madrid\", \"groupType\" : \"control\"},\n" +
+        "{ \"_id\" : \"2\", \"test\" : 10.0, \"City\" : \"Madrid\", \"groupType\" : \"treatment\"},\n" +
+        "{ \"_id\" : \"3\", \"test\" : 2.0, \"City\" : \"Madrid\", \"groupType\" : \"control\"},\n" +
+        "{ \"_id\" : \"4\", \"test\" : 20.0, \"City\" : \"Madrid\", \"groupType\" : \"treatment\"},\n" +
+        "{ \"_id\" : \"5\", \"test\" : 3.0, \"City\" : \"London\", \"groupType\" : \"control\"},\n" +
+        "{ \"_id\" : \"6\", \"test\" : 30.0, \"City\" : \"London\", \"groupType\" : \"treatment\"},\n" +
+        "{ \"_id\" : \"7\", \"test\" : 4.0, \"City\" : \"Paris\", \"groupType\" : \"control\"},\n" +
+        "{ \"_id\" : \"8\", \"test\" : 40.0, \"City\" : \"Paris\", \"groupType\" : \"treatment\"},\n" +
+        "{ \"_id\" : \"9\", \"test\" : 5.0, \"City\" : \"Paris\", \"groupType\" : \"control\"},\n" +
+        "{ \"_id\" : \"10\", \"test\" : 50.0, \"City\" : \"Paris\", \"groupType\" : \"treatment\"}]");
+
+    // When
+    AggregationOutput output = coll.aggregate(fongoRule.parseList("[{ \n" +
+        "  \"$group\" : { \n" + //
+        "      \"_id\" : { \"groupType\" : \"$groupType\" , \"City\" : \"$City\"} , \n" + //
+        "      \"data\" : { \"$push\" : \"$$ROOT\"}\n" +                                   //
+        "  }\n" +                                                                             //
+        "}]"));
+
+    // Then
+    Assertions.assertThat(output.results()).containsAll(fongoRule.parseList("[{\"_id\":{\"groupType\":\"treatment\", \"City\":\"Paris\"}, \"data\":[{\"_id\":\"8\", \"test\":40.0, \"City\":\"Paris\", \"groupType\":\"treatment\"}, {\"_id\":\"10\", \"test\":50.0, \"City\":\"Paris\", \"groupType\":\"treatment\"}]}, {\"_id\":{\"groupType\":\"control\", \"City\":\"Madrid\"}, \"data\":[{\"_id\":\"1\", \"test\":1.0, \"City\":\"Madrid\", \"groupType\":\"control\"}, {\"_id\":\"3\", \"test\":2.0, \"City\":\"Madrid\", \"groupType\":\"control\"}]}, {\"_id\":{\"groupType\":\"control\", \"City\":\"London\"}, \"data\":[{\"_id\":\"5\", \"test\":3.0, \"City\":\"London\", \"groupType\":\"control\"}]}, {\"_id\":{\"groupType\":\"treatment\", \"City\":\"London\"}, \"data\":[{\"_id\":\"6\", \"test\":30.0, \"City\":\"London\", \"groupType\":\"treatment\"}]}, {\"_id\":{\"groupType\":\"control\", \"City\":\"Paris\"}, \"data\":[{\"_id\":\"7\", \"test\":4.0, \"City\":\"Paris\", \"groupType\":\"control\"}, {\"_id\":\"9\", \"test\":5.0, \"City\":\"Paris\", \"groupType\":\"control\"}]}, {\"_id\":{\"groupType\":\"treatment\", \"City\":\"Madrid\"}, \"data\":[{\"_id\":\"2\", \"test\":10.0, \"City\":\"Madrid\", \"groupType\":\"treatment\"}, {\"_id\":\"4\", \"test\":20.0, \"City\":\"Madrid\", \"groupType\":\"treatment\"}]}]"));
+  }
 }
