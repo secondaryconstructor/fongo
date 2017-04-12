@@ -2454,6 +2454,22 @@ public class FongoTest {
         "{ \"_id\" : 2, \"name\" : \"B\", \"workdays\" : 2 }\n]"));
   }
 
+  @Test
+  public void should_$mod_in_group_work_with_expressions() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(fongoRule.parseList("[{ \"_id\" : 1, \"project\" : \"A\", \"hours\" : 80, \"tasks\" : 7 },\n" +
+        "{ \"_id\" : 2, \"project\" : \"B\", \"hours\" : 40, \"tasks\" : 4 }]"));
+
+    // When
+    AggregationOutput result = collection
+        .aggregate(fongoRule.parseList("[{ $project: { remainder: { $mod: [ \"$hours\", \"$tasks\" ] } } }]"));
+
+    // Then
+    Assertions.assertThat(result.results()).isEqualTo(fongoRule.parseList("[{ \"_id\" : 1, \"remainder\" : 3 },\n" +
+        "{ \"_id\" : 2, \"remainder\" : 0 }]"));
+  }
+
   // https://github.com/fakemongo/fongo/issues/36
   @Test
   public void should_$divide_in_group_work_well() {

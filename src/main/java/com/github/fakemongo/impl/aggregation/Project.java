@@ -52,6 +52,8 @@ public class Project extends PipelineKeyword {
       projectedAbstractMap.put(ProjectedToLower.KEYWORD, ProjectedToLower.class);
       projectedAbstractMap.put(ProjectedToUpper.KEYWORD, ProjectedToUpper.class);
       projectedAbstractMap.put(ProjectedToDivide.KEYWORD, ProjectedToDivide.class);
+      projectedAbstractMap.put(ProjectedToMod.KEYWORD, ProjectedToMod.class);
+      projectedAbstractMap.put(ProjectedToMultiply.KEYWORD, ProjectedToMultiply.class);
       projectedAbstractMap.put(ProjectedToAdd.KEYWORD, ProjectedToAdd.class);
       projectedAbstractMap.put(ProjectedDateDayOfYear.KEYWORD, ProjectedDateDayOfYear.class);
       projectedAbstractMap.put(ProjectedDateDayOfMonth.KEYWORD, ProjectedDateDayOfMonth.class);
@@ -577,6 +579,78 @@ public class Project extends PipelineKeyword {
       final Number left = extractValue(object, expression1);
       final Number right = extractValue(object, expression2);
       result.put(destName, Util.genericDiv(left, right));
+    }
+  }
+
+  static class ProjectedToMod extends ProjectedAbstract<ProjectedToDivide> {
+    static final String KEYWORD = "$mod";
+
+
+    private final Object expression1;
+    private final Object expression2;
+
+    public ProjectedToMod(String destName, DBCollection coll, DBObject object) {
+      this(KEYWORD, destName, coll, object);
+    }
+
+    ProjectedToMod(String keyword, String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object value = object.get(keyword);
+      if (!(value instanceof List) || ((List) value).size() != 2) {
+        errorResult(coll, 16020, "the " + keyword + " operator requires an array of 2 operands");
+      }
+      List values = (List) value;
+      expression1 = values.get(0);
+      expression2 = values.get(1);
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      createMapping(coll, projectResult, projectedFields, destName, expression1, namespace, this);
+      createMapping(coll, projectResult, projectedFields, destName, expression2, namespace, this);
+    }
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      final Number left = extractValue(object, expression1);
+      final Number right = extractValue(object, expression2);
+      result.put(destName, Util.genericMod(left, right));
+    }
+  }
+
+  static class ProjectedToMod extends ProjectedAbstract<ProjectedToDivide> {
+    static final String KEYWORD = "$mod";
+
+
+    private final Object expression1;
+    private final Object expression2;
+
+    public ProjectedToMod(String destName, DBCollection coll, DBObject object) {
+      this(KEYWORD, destName, coll, object);
+    }
+
+    ProjectedToMod(String keyword, String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object value = object.get(keyword);
+      if (!(value instanceof List) || ((List) value).size() != 2) {
+        errorResult(coll, 16020, "the " + keyword + " operator requires an array of 2 operands");
+      }
+      List values = (List) value;
+      expression1 = values.get(0);
+      expression2 = values.get(1);
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      createMapping(coll, projectResult, projectedFields, destName, expression1, namespace, this);
+      createMapping(coll, projectResult, projectedFields, destName, expression2, namespace, this);
+    }
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      final Number left = extractValue(object, expression1);
+      final Number right = extractValue(object, expression2);
+      result.put(destName, Util.genericMod(left, right));
     }
   }
 

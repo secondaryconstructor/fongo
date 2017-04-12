@@ -440,6 +440,16 @@ public final class Util {
     }
   }
 
+  public static Number genericMod(Number left, Number right) {
+    if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
+      return left.doubleValue() % (right.doubleValue());
+    } else if (left instanceof Integer && right instanceof Integer) {
+      return left.intValue() % right.intValue();
+    } else {
+      return left.longValue() % right.longValue();
+    }
+  }
+
   public static Number genericMax(Number left, Number right) {
     if (left instanceof Float || left instanceof Double || right instanceof Float || right instanceof Double) {
       return Math.max(left.doubleValue(), right.doubleValue());
