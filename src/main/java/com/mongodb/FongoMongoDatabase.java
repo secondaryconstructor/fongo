@@ -13,7 +13,7 @@ public class FongoMongoDatabase extends MongoDatabaseImpl {
   private final Fongo fongo;
 
   public FongoMongoDatabase(final String databaseName, final Fongo fongo) {
-    this(databaseName, fongo, MongoClient.getDefaultCodecRegistry(), ReadPreference.primary(), WriteConcern.ACKNOWLEDGED, ReadConcern.DEFAULT);
+    this(databaseName, fongo, fongo.getCodecRegistry(), ReadPreference.primary(), WriteConcern.ACKNOWLEDGED, ReadConcern.DEFAULT);
   }
 
   private FongoMongoDatabase(final String databaseName, final Fongo fongo, final CodecRegistry codecRegistry, final ReadPreference readPreference, final WriteConcern writeConcern, final ReadConcern readConcern) {

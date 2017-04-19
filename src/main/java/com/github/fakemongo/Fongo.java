@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public class Fongo implements OperationExecutor {
   private final MongoClient mongo;
   private final String name;
   private final ServerVersion serverVersion;
+  private final CodecRegistry codecRegistry;
 
   /**
    * @param name Used only for a nice toString in case you have multiple instances
@@ -70,9 +72,19 @@ public class Fongo implements OperationExecutor {
    * @param serverVersion version of the server to use for fongo.
    */
   public Fongo(final String name, final ServerVersion serverVersion) {
+    this(name, serverVersion, MongoClient.getDefaultCodecRegistry());
+  }
+
+  /**
+   * @param name          Used only for a nice toString in case you have multiple instances
+   * @param serverVersion version of the server to use for fongo.
+   * @param codecRegistry the codec registry used by fongo.
+   */
+  public Fongo(final String name, final ServerVersion serverVersion, final CodecRegistry codecRegistry) {
     this.name = name;
     this.serverAddress = new ServerAddress(new InetSocketAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort()));
     this.serverVersion = serverVersion;
+    this.codecRegistry = codecRegistry;
     this.mongo = createMongo();
   }
 
@@ -155,6 +167,9 @@ public class Fongo implements OperationExecutor {
     return mongo.getReadConcern();
   }
 
+  public CodecRegistry getCodecRegistry() {
+    return codecRegistry;
+  }
 
   private MongoClient createMongo() {
     return MockMongoClient.create(this);
