@@ -298,3 +298,4 @@ Version 1.6.0 break compatibility with 2.12.X driver version.
 * [Dmitri Maksimov](https://github.com/mcdimus)
 * [Enrico Pelizzon](https://github.com/theimplementer)
 * [Krzysztof Sukienniczak](https://github.com/krs)
+* [zigzago](https://github.com/zigzago)
