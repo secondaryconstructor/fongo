@@ -27,19 +27,20 @@ import org.objenesis.ObjenesisStd;
 
 public class MockMongoClient extends MongoClient {
 
-  // this is immutable 
-  private final static MongoClientOptions clientOptions = MongoClientOptions.builder().build();
-
   private volatile BufferProvider bufferProvider;
 
   private Fongo fongo;
   private MongoOptions options;
   private ReadConcern readConcern;
+  private MongoClientOptions clientOptions;
 
   public static MockMongoClient create(Fongo fongo) {
     // using objenesis here to prevent default constructor from spinning up background threads.
 //    MockMongoClient client = new ObjenesisStd().getInstantiatorOf(MockMongoClient.class).newInstance();
     MockMongoClient client = ObjenesisHelper.newInstance(MockMongoClient.class);
+
+    MongoClientOptions clientOptions = MongoClientOptions.builder().codecRegistry(fongo.getCodecRegistry()).build();
+    client.clientOptions = clientOptions;
     client.options = new MongoOptions(clientOptions);
     client.fongo = fongo;
     client.setWriteConcern(clientOptions.getWriteConcern());
