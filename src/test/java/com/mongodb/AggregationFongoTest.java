@@ -4,8 +4,11 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
 import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +34,7 @@ public class AggregationFongoTest {
 	}
 	
 	@After
-	public void afetrMethod(){
+	public void afterMethod(){
 		collection.drop();
 	}
 	
@@ -523,6 +526,40 @@ public class AggregationFongoTest {
 		assertEquals(document1.toJson(), result.get(0).toJson());
 		assertEquals(document2.toJson(), result.get(1).toJson());
 		assertEquals(document3.toJson(), result.get(2).toJson());
+	}
+
+	@Test
+	public void AValid$Project$groupShouldTakeSimpleKeyIntoAccount(){
+		collection.insertMany(Arrays.asList(
+			new Document("key", "WK1").append("state", 700),
+			new Document("key", "WK2").append("state", 50),
+			new Document("key", "WK1").append("state", 750)
+		));
+
+
+		Iterator<Document> result = collection.aggregate(Arrays.asList(
+			Aggregates.group(new Document("key", "$key"), Accumulators.push("states","$state"))
+		)).iterator();
+
+		assertEquals(new Document("_id", new Document("key", "WK1")).append("states", Arrays.asList(700, 750)).toJson(), result.next().toJson());
+		assertEquals(new Document("_id", new Document("key", "WK2")).append("states", Arrays.asList(50)).toJson(), result.next().toJson());
+	}
+
+	@Test
+	public void AValid$Project$groupShouldTakeCompoundKeyIntoAccount(){
+		collection.insertMany(Arrays.asList(
+			new Document("key", new Document("name", "WK1")).append("state", 700),
+			new Document("key", new Document("name", "WK2")).append("state", 50),
+			new Document("key", new Document("name", "WK1")).append("state", 750)
+		));
+
+
+		Iterator<Document> result = collection.aggregate(Arrays.asList(
+			Aggregates.group(new Document("key", "$key.name"), Accumulators.push("states","$state"))
+		)).iterator();
+
+		assertEquals(new Document("_id", new Document("key", "WK1")).append("states", Arrays.asList(700, 750)).toJson(), result.next().toJson());
+		assertEquals(new Document("_id", new Document("key", "WK2")).append("states", Arrays.asList(50)).toJson(), result.next().toJson());
 	}
 	
 	

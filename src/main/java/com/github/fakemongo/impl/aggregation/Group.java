@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -199,19 +200,29 @@ public class Group extends PipelineKeyword {
    * @return a (Criteria, Mapping) for the id.
    */
   private Map<DBObject, Mapping> createMapping(DBCollection coll, Object id) {
-    Map<DBObject, Mapping> mapping = new HashMap<DBObject, Mapping>();
+    // create groups
+    Map<DBObject, List<DBObject>> groups = new HashMap<DBObject, List<DBObject>>();
     List<DBObject> objects = coll.find().toArray();
     for (DBObject dbObject : objects) {
       DBObject criteria = criteriaForId(id, dbObject);
-      if (!mapping.containsKey(criteria)) {
-        // Return all object we can group
-        List<DBObject> newCollection = coll.find(criteria).toArray();
-        // Generate keyword
-        DBObject key = keyForId(id, dbObject);
-        // Save into mapping
-        mapping.put(criteria, new Mapping(key, createAndInsert(newCollection), Util.clone(key)));
-        LOG.trace("createMapping() new criteria : {}", criteria);
+      List<DBObject> groupCollection = groups.get(criteria);
+      if (groupCollection == null) {
+        groupCollection = new LinkedList<DBObject>();
+        groups.put(criteria, groupCollection);
       }
+      groupCollection.add(dbObject);
+    }
+
+    // and mappings
+    Map<DBObject, Mapping> mapping = new HashMap<DBObject, Mapping>();
+    for (Map.Entry<DBObject, List<DBObject>> group: groups.entrySet()) {
+      DBObject criteria = group.getKey();
+      List<DBObject> newCollection = group.getValue();
+      // Generate keyword
+      DBObject key = keyForId(id, newCollection.get(0));
+      // Save into mapping
+      mapping.put(criteria, new Mapping(key, createAndInsert(newCollection), Util.clone(key)));
+      LOG.trace("createMapping() new criteria : {}", criteria);
     }
     return mapping;
   }
