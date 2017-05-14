@@ -3840,6 +3840,21 @@ public class FongoTest {
   }
 
   @Test
+  public void should_$size_long_return_empty_arrays() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(new BasicDBObject("_id", 1));
+    collection.insert(new BasicDBObject("_id", 2).append("array", new BasicDBList()));
+    collection.insert(new BasicDBObject("_id", 3).append("array", Util.list("1")));
+
+    // When
+    final List<DBObject> dbObjects = collection.find(new BasicDBObject("array", new BasicDBObject("$size", 0L))).toArray();
+
+    // Then
+    assertThat(dbObjects).hasSize(1).containsOnly(new BasicDBObject("_id", 2).append("array", new BasicDBList()));
+  }
+
+  @Test
   // "https://github.com/fakemongo/fongo/issues/225"
   public void should_empty_array_return_empty_arrays() {
     // Given

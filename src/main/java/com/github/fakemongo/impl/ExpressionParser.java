@@ -286,9 +286,9 @@ public class ExpressionParser {
       new BasicFilterFactory(SIZE) {
         @Override
         boolean compare(Object queryValue, Object storedValue) {
-          Integer size = typecast(command + " clause", queryValue, Integer.class);
+          Number size = typecast(command + " clause", queryValue, Number.class);
           List storedList = typecast("value", storedValue, List.class);
-          return storedList != null && storedList.size() == size;
+          return storedList != null && storedList.size() == size.intValue();
         }
       },
       new BasicCommandFilterFactory(REGEX) {
