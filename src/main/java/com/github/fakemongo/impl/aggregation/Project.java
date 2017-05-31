@@ -2,29 +2,13 @@ package com.github.fakemongo.impl.aggregation;
 
 import com.github.fakemongo.impl.ExpressionParser;
 import com.github.fakemongo.impl.Util;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.FongoDB;
-import com.mongodb.FongoDBCollection;
-import com.mongodb.MongoException;
+import com.mongodb.*;
 import com.mongodb.annotations.ThreadSafe;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * TODO : { project : { _id : 0} } must remove the _id field. If a $sort exist after...
@@ -66,6 +50,8 @@ public class Project extends PipelineKeyword {
       projectedAbstractMap.put(ProjectedDateMinute.KEYWORD, ProjectedDateMinute.class);
       projectedAbstractMap.put(ProjectedDateSecond.KEYWORD, ProjectedDateSecond.class);
       projectedAbstractMap.put(ProjectedDateMillisecond.KEYWORD, ProjectedDateMillisecond.class);
+      projectedAbstractMap.put(ProjectedOr.KEYWORD, ProjectedOr.class);
+      projectedAbstractMap.put(ProjectedAnd.KEYWORD, ProjectedAnd.class);
 
       projectedAbstractMap.put(ProjectedFilter.KEYWORD, ProjectedFilter.class);
 
@@ -1072,5 +1058,111 @@ public class Project extends PipelineKeyword {
 
   }
 
+
+  public static class ProjectedOr extends ProjectedAbstract<ProjectedOr> {
+    public static final String KEYWORD = "$or";
+
+    private List<String> fromLocations = null;
+
+    public ProjectedOr(String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object from = object.get(keyword);
+
+      if (from instanceof List) {
+        fromLocations = (List<String>) from;
+      } else if (from instanceof String) {
+        fromLocations = new ArrayList<String>();
+        fromLocations.add((String) from);
+      }
+
+    }
+
+
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      for (String fromLocation : fromLocations) {
+        if (fromLocation.startsWith("$")) {
+          fromLocation = fromLocation.substring(1);
+        }
+
+        BasicDBList list = (BasicDBList) object.get(fromLocation);
+
+        Boolean orValue = false;
+        for (Object o : list) {
+          if (o instanceof Boolean) {
+            Boolean current = (Boolean) o;
+            orValue = current || orValue;
+
+            if (orValue) {
+              break;
+            }
+          }
+        }
+
+        result.put(destName, orValue);
+      }
+
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      for (String fromLocation : fromLocations) {
+        createMapping(coll, projectResult, projectedFields, destName, fromLocation, namespace, this);    }
+      }
+  }
+
+  public static class ProjectedAnd extends ProjectedAbstract<ProjectedAnd> {
+    public static final String KEYWORD = "$and";
+
+    private List<String> fromLocations = null;
+
+    public ProjectedAnd(String destName, DBCollection coll, DBObject object) {
+      super(KEYWORD, destName, object);
+      Object from = object.get(keyword);
+
+      if (from instanceof List) {
+        fromLocations = (List<String>) from;
+      } else if (from instanceof String) {
+        fromLocations = new ArrayList<String>();
+        fromLocations.add((String) from);
+      }
+
+    }
+
+
+
+    @Override
+    public void unapply(DBObject result, DBObject object, String key) {
+      for (String fromLocation : fromLocations) {
+        if (fromLocation.startsWith("$")) {
+          fromLocation = fromLocation.substring(1);
+        }
+
+        BasicDBList list = (BasicDBList) object.get(fromLocation);
+
+        Boolean andValue = true;
+        for (Object o : list) {
+          if (o instanceof Boolean) {
+            Boolean current = (Boolean) o;
+            andValue = current && andValue;
+
+            if (!andValue) {
+              break;
+            }
+          }
+        }
+
+        result.put(destName, andValue);
+      }
+
+    }
+
+    @Override
+    void doWork(DBCollection coll, DBObject projectResult, Map<String, List<ProjectedAbstract>> projectedFields, String key, Object value, String namespace) {
+      for (String fromLocation : fromLocations) {
+        createMapping(coll, projectResult, projectedFields, destName, fromLocation, namespace, this);    }
+      }
+  }
 
 }
