@@ -2,27 +2,19 @@ package com.github.fakemongo;
 
 import com.github.fakemongo.impl.Util;
 import com.github.fakemongo.junit.FongoRule;
-import com.mongodb.AggregationOutput;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
+import com.mongodb.*;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Lists;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 public class FongoAggregateProjectTest {
 
@@ -1120,6 +1112,52 @@ public class FongoAggregateProjectTest {
     // When
     ExpectedMongoException.expectMongoCommandException(exception, 16020);
     collection.aggregate(fongoRule.parseList("[{$match: {liked: {$ne: null}}}, {$project: {viewCount: 1, likedCount: {$size: [\"$liked\", \"$arr\"]}, liked: 1} }, {$sort: {viewCount: -1, likedCount: -1}}, {$limit: 1}]"));
+  }
+
+  @Test
+  public void projectAndOr() throws Exception {
+    DBCollection collection = fongoRule.newCollection();
+    DBObject document1 = new BasicDBObject("id", 0).append("boolField", true);
+    DBObject document2 = new BasicDBObject("id", 0).append("boolField", true);
+    DBObject document3 = new BasicDBObject("id", 0).append("boolField", false);
+    DBObject document4 = new BasicDBObject("id", 1).append("boolField", true);
+    DBObject document5 = new BasicDBObject("id", 2).append("boolField", false);
+    DBObject document6 = new BasicDBObject("id", 3);
+
+    collection.insert(Arrays.asList(document1, document2, document3, document4, document5, document6));
+
+    DBObject group = new BasicDBObject("$group", new BasicDBObject("boolArray", new BasicDBObject("$push", "$boolField"))
+            .append("_id", "$id"));
+    DBObject project = new BasicDBObject("$project", new BasicDBObject("boolArrayOr", new BasicDBObject("$or", "$boolArray"))
+            .append("boolArrayAnd", new BasicDBObject("$and", "$boolArray"))
+            .append("boolArray", 1));
+
+    Iterable<DBObject> results = collection.aggregate(Arrays.asList(group, project)).results();
+
+    final List<DBObject> result = new ArrayList<DBObject>();
+
+    for (DBObject dbObject : results) {
+      result.add(dbObject);
+    }
+
+    assertEquals(4, result.size());
+
+    for (DBObject dbObject : result) {
+      Integer id = (Integer) dbObject.get("_id");
+      if (id == 0) {
+        assertEquals(true, dbObject.get("boolArrayOr"));
+        assertEquals(false, dbObject.get("boolArrayAnd"));
+      } else if (id == 1) {
+        assertEquals(true, dbObject.get("boolArrayOr"));
+        assertEquals(true, dbObject.get("boolArrayAnd"));
+      } else if (id == 2) {
+        assertEquals(false, dbObject.get("boolArrayOr"));
+        assertEquals(false, dbObject.get("boolArrayAnd"));
+      }else if (id == 3) {
+        assertEquals(false, dbObject.get("boolArrayOr"));
+        assertEquals(true, dbObject.get("boolArrayAnd"));
+      }
+    }
   }
 
   private DBCollection createTestCollection() {
