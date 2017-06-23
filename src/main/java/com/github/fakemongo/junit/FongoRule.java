@@ -208,7 +208,7 @@ public class FongoRule extends ExternalResource {
     return mongoDatabase.getCollection(collectionName, documentClass);
   }
 
-  private Fongo newFongo(ServerVersion serverVersion) {
+  protected Fongo newFongo(ServerVersion serverVersion) {
     return new Fongo("test", serverVersion);
   }
 

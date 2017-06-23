@@ -130,7 +130,7 @@ public class FongoAsyncRule extends ExternalResource {
     return mongoDatabase.getCollection(collectionName, documentClass);
   }
 
-  private FongoAsync newFongo(ServerVersion serverVersion) {
+  protected FongoAsync newFongo(ServerVersion serverVersion) {
     return new FongoAsync("test", serverVersion);
   }
 
