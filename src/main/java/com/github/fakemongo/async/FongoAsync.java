@@ -8,6 +8,7 @@ import com.mongodb.async.SingleResultCallback;
 import com.mongodb.async.client.FongoAsyncMongoDatabase;
 import com.mongodb.async.client.MockAsyncMongoClient;
 import com.mongodb.async.client.MongoClient;
+import com.mongodb.async.client.MongoClients;
 import com.mongodb.binding.AsyncConnectionSource;
 import com.mongodb.binding.AsyncReadBinding;
 import com.mongodb.binding.AsyncWriteBinding;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,10 +64,19 @@ public class FongoAsync implements AsyncOperationExecutor {
    * @param serverVersion version of the server to use for fongo.
    */
   public FongoAsync(final String name, final ServerVersion serverVersion) {
+    this(name, serverVersion, MongoClients.getDefaultCodecRegistry());
+  }
+
+  /**
+   * @param name          Used only for a nice toString in case you have multiple instances
+   * @param serverVersion version of the server to use for fongo.
+   * @param codecRegistry the codec registry used by fongo.
+   */
+  public FongoAsync(final String name, final ServerVersion serverVersion, final CodecRegistry codecRegistry) {
     this.name = name;
     this.serverAddress = new ServerAddress(new InetSocketAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort()));
     this.mongo = createMongo();
-    this.fongo = new Fongo(name, serverVersion);
+    this.fongo = new Fongo(name, serverVersion, codecRegistry);
   }
 
   /**
