@@ -109,6 +109,11 @@ public class MockMongoClient extends MongoClient {
   }
 
   @Override
+  public ServerAddress getAddress() {
+    return fongo.getServerAddress();
+  }
+
+  @Override
   public List<ServerAddress> getServerAddressList() {
     return Collections.singletonList(fongo.getServerAddress());
   }
