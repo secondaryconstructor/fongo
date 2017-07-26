@@ -29,4 +29,11 @@ public class FongoMongoTest {
 
     assertThat(mongoClient.getAllAddress()).containsOnly(new ServerAddress(new InetSocketAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort())));
   }
+
+  @Test
+  public void mongoGetAddressOverride() {
+    MongoClient mongoClient = new Fongo("test").getMongo();
+
+    assertThat(mongoClient.getAddress()).isEqualTo(new ServerAddress(new InetSocketAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort())));
+  }
 }
