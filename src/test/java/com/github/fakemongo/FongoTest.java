@@ -4016,6 +4016,23 @@ public class FongoTest {
         "}]\n"));
   }
 
+  @Test
+  public void should_not_find_when_array_does_not_contain_subfield_existing_in_outer_document() {
+    // Given
+    DBCollection collection = newCollection();
+    this.fongoRule.insertJSON(collection, "[{\n" +
+            "  _id: 4,\n" +
+            "  array: [\n" +
+            "  ]\n" +
+            "}]\n");
+
+    // When
+    DBCursor dbc = collection.find(new BasicDBObject("array._id", 4));
+
+    // Then
+    Assertions.assertThat(dbc.toArray()).isEmpty();
+  }
+
   static class Seq {
     Object[] data;
 
