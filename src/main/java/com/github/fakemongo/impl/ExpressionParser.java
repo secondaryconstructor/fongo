@@ -549,9 +549,7 @@ public class ExpressionParser {
             results.addAll(extractDBRefValue((DBRef) listValue, path.get(i + 1)));
           }
         }
-        if (!results.isEmpty()) {
-          return results;
-        }
+        return results;
       } else if (value instanceof DBRef) {
         return extractDBRefValue((DBRef) value, path.get(i + 1));
       } else {
