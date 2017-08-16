@@ -86,7 +86,7 @@ public class FongoDBCollection extends DBCollection {
     this.expressionParser = new ExpressionParser();
     this.updateEngine = new UpdateEngine();
     this.objectComparator = expressionParser.buildObjectComparator(true);
-    this._idIndex = IndexFactory.create(ID_FIELD_NAME, new BasicDBObject(ID_FIELD_NAME, 1), !idIsNotUniq);
+    this._idIndex = IndexFactory.create(ID_FIELD_NAME, new BasicDBObject(ID_FIELD_NAME, 1), !idIsNotUniq, false);  // _id should never be sparse
     this.indexes.add(_idIndex);
     if (!this.nonIdCollection) {
       this.createIndex(new BasicDBObject(ID_FIELD_NAME, 1), new BasicDBObject("name", ID_NAME_INDEX));
@@ -527,10 +527,15 @@ public class FongoDBCollection extends DBCollection {
     if (unique) {
       rec.append("unique", unique);
     }
+    boolean sparse = options != null && options.get("sparse") != null && (Boolean.TRUE.equals(options.get("sparse")) || "1".equals(options.get("sparse")) || Integer.valueOf(1).equals(options.get("sparse")));
+    if (sparse) {
+      rec.append("sparse", sparse);
+    }
+    
     rec.putAll(options);
 
     try {
-      IndexAbstract index = IndexFactory.create((String) rec.get("name"), keys, unique);
+      IndexAbstract index = IndexFactory.create((String) rec.get("name"), keys, unique, sparse);
       @SuppressWarnings("unchecked") List<List<Object>> notUnique = index.addAll(_idIndex.values());
       if (!notUnique.isEmpty()) {
         // Duplicate key.

@@ -12,16 +12,16 @@ public final class IndexFactory {
   private IndexFactory() {
   }
 
-  public static IndexAbstract create(String name, DBObject keys, boolean unique) throws MongoException {
+  public static IndexAbstract create(String name, DBObject keys, boolean unique, boolean sparse) throws MongoException {
     String geoIndex = getGeoKey(keys);
     if (geoIndex != null) {
-      return new GeoIndex(name, keys, unique, geoIndex);
+      return new GeoIndex(name, keys, unique, geoIndex, sparse);
     } else {
       String hashed = getHashedKey(keys);
       if (hashed != null) {
-        return new HashedIndex(name, keys, unique, hashed);
+        return new HashedIndex(name, keys, unique, hashed, sparse);
       }
-      return new Index(name, keys, unique);
+      return new Index(name, keys, unique, sparse);
     }
   }
 

@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
 public class HashedIndex extends IndexAbstract<DBObject> {
   private static final Logger LOG = LoggerFactory.getLogger(HashedIndex.class);
 
-  HashedIndex(String name, DBObject keys, boolean unique, String hashed) {
-    super(name, keys, unique, new LinkedHashMap<DBObject, IndexedList<DBObject>>(), hashed);
+  HashedIndex(String name, DBObject keys, boolean unique, String hashed, boolean sparse) {
+    super(name, keys, unique, new LinkedHashMap<DBObject, IndexedList<DBObject>>(), hashed, sparse);
   }
 
   /**
