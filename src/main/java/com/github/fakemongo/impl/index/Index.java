@@ -16,8 +16,8 @@ import java.util.TreeMap;
  */
 public class Index extends IndexAbstract<DBObject> {
 
-  Index(String name, DBObject keys, boolean unique) {
-    super(name, keys, unique, createMap(keys, unique), null);
+  Index(String name, DBObject keys, boolean unique, boolean sparse) {
+    super(name, keys, unique, createMap(keys, unique), null, sparse);
   }
 
   private static Map<DBObject, IndexedList<DBObject>> createMap(DBObject keys, boolean unique) {
