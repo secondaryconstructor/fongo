@@ -6,15 +6,20 @@ import com.github.fakemongo.impl.Util;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import com.mongodb.FongoDBCollection;
+
 import static com.mongodb.FongoDBCollection.ID_FIELD_NAME;
+
 import com.mongodb.MongoException;
 import com.mongodb.QueryOperators;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+
 import org.bson.types.Binary;
 
 /**
@@ -31,15 +36,17 @@ public abstract class IndexAbstract<T extends DBObject> {
   private final DBObject keys;
   private final Set<String> fields;
   private final boolean unique;
+  private final boolean sparse;
   int lookupCount = 0;
 
-  IndexAbstract(String name, DBObject keys, boolean unique, Map<T, IndexedList<T>> mapValues, String geoIndex) throws MongoException {
+  IndexAbstract(String name, DBObject keys, boolean unique, Map<T, IndexedList<T>> mapValues, String geoIndex, boolean sparse) throws MongoException {
     this.name = name;
     this.fields = Collections.unmodifiableSet(keys.keySet()); // Setup BEFORE keys.
     this.keys = prepareKeys(keys);
     this.unique = unique;
     this.mapValues = mapValues;
     this.geoIndex = geoIndex;
+    this.sparse = sparse;
 
     for (Object value : keys.toMap().values()) {
       if (!(value instanceof String) && !(value instanceof Number)) {
@@ -90,6 +97,10 @@ public abstract class IndexAbstract<T extends DBObject> {
     return unique;
   }
 
+  public boolean isSparse() {
+    return sparse;
+  }
+
   public boolean isGeoIndex() {
     return geoIndex != null;
   }
@@ -113,13 +124,18 @@ public abstract class IndexAbstract<T extends DBObject> {
     }
 
     T key = getKeyFor(object);
+    // In a sparse index, we only add to the index if the full key is there.
+    if (sparse && isPartialKey(key)) {
+      return Collections.emptyList();
+    }
 
     if (unique) {
       // Unique must check if he's really unique.
       if (mapValues.containsKey(key)) {
         return extractFields(object, key.keySet());
       }
-      mapValues.put(key, new IndexedList<T>(Collections.singletonList(embedded(object)))); // DO NOT CLONE !
+      T toAdd = embedded(object);
+      mapValues.put(key, new IndexedList<T>(Collections.singletonList(toAdd))); // DO NOT CLONE !
     } else {
       // Extract previous values
       IndexedList<T> values = mapValues.get(key);
@@ -134,6 +150,33 @@ public abstract class IndexAbstract<T extends DBObject> {
       values.add(toAdd);
     }
     return Collections.emptyList();
+  }
+
+  private boolean isPartialKey(T key) {
+    final Set<String> keyProjections = generateProjections(key, "");
+    return !getFields().equals(keyProjections);
+  }
+
+  private Set<String> generateProjections(T object, final String parentPath) {
+    final Set<String> rval = new TreeSet<String>();
+    for (String objectKey : object.keySet()) {
+      Object value = object.get(objectKey);
+      if (value instanceof List) {
+        List valueList = (List) value;
+        for (Object listItem : valueList) {
+          if (listItem instanceof DBObject) {
+            rval.addAll(generateProjections((T) listItem, parentPath + objectKey + "."));
+          } else {
+            rval.add(parentPath + objectKey);
+          }
+        }
+      } else if (value instanceof DBObject) {
+        rval.addAll(generateProjections((T) value, parentPath + objectKey + "."));
+      } else {
+        rval.add(parentPath + objectKey);
+      }
+    }
+    return rval;
   }
 
   public abstract T embedded(DBObject object);

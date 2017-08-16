@@ -372,6 +372,101 @@ public class FongoDBCollectionTest {
   }
 
   @Test
+  public void sparseNonUniqueIndex() {
+    collection.createIndex(new BasicDBObject("sparseNonUnique", 1), new BasicDBObject("sparse", true));
+    BasicDBObject obj1 = new BasicDBObject().append("_id", "_id1")
+            .append("sparseNonUnique", "42").append("other", "value1");
+    BasicDBObject obj2 = new BasicDBObject().append("_id", "_id2")
+            .append("other", "value2");
+    BasicDBObject obj3 = new BasicDBObject().append("_id", "_id3")
+            .append("other", "value3");
+    BasicDBObject obj4 = new BasicDBObject().append("_id", "_id4")
+            .append("sparseNonUnique", "42").append("other", "value4");
+    collection.insert(obj1);
+    collection.insert(obj2);
+    collection.insert(obj3);
+    collection.insert(obj4);
+    DBCursor result = collection.find(new BasicDBObject("sparseNonUnique", "42"));
+    Assertions.assertThat(result.size()).isEqualTo(2);
+    DBCursor result3 = collection.find(new BasicDBObject("other", new BasicDBObject("$exists", true)));
+    Assertions.assertThat(result3.size()).isEqualTo(4);
+  }
+
+  @Test
+  public void sparseUniqueIndexSubList() {
+    collection.createIndex(new BasicDBObject("sparseUnique.sublist", 1),
+            new BasicDBObject().append("unique", true).append("sparse", true)
+                .append("name", "sparseUnique.sublist"));
+
+    BasicDBList list1 = new BasicDBList();
+    list1.add(new BasicDBObject("sublist","42"));
+    BasicDBObject obj1 = new BasicDBObject().append("_id", "_id1")
+            .append("sparseUnique", list1);
+
+    BasicDBList list2 = new BasicDBList();
+    BasicDBObject obj2 = new BasicDBObject().append("_id", "_id2")
+            .append("sparseUnique", list2);
+
+    BasicDBList list3 = new BasicDBList();
+    BasicDBObject obj3 = new BasicDBObject().append("_id", "_id3")
+            .append("sparseUnique", list3);
+
+    BasicDBList list4 = new BasicDBList();
+    list4.add(new BasicDBObject("sublist","42"));
+    BasicDBObject obj4 = new BasicDBObject().append("_id", "_id1")
+            .append("sparseUnique", list4);
+    collection.insert(obj1);
+    collection.insert(obj2);
+    collection.insert(obj3);
+    boolean sawException = false;
+    try {
+      collection.insert(obj4);
+    } catch (DuplicateKeyException e) {
+      sawException = true;
+    }
+    DBCursor result = collection.find(new BasicDBObject("sparseUnique.sublist", "42"));
+    Assertions.assertThat(result.size()).isEqualTo(1);
+    Assertions.assertThat(sawException).isEqualTo(true);
+    DBCursor result2 = collection.find(new BasicDBObject("sparseUnique", new BasicDBObject("$size", 0)));
+    Assertions.assertThat(result2.size()).isEqualTo(2);
+    DBCursor result3 = collection.find(new BasicDBObject("sparseUnique", new BasicDBObject("$exists", true)));
+    Assertions.assertThat(result3.size()).isEqualTo(3);
+  }
+
+  @Test
+  public void sparseUniqueIndexSubdoc() {
+    collection.createIndex(new BasicDBObject("sparseUnique.subdoc", 1),
+            new BasicDBObject().append("unique", true).append("sparse", true)
+                .append("name", "sparseUnique.subdoc"));
+
+    BasicDBObject obj1 = new BasicDBObject().append("_id", "_id1")
+            .append("sparseUnique", new BasicDBObject("subdoc","42"));
+
+    BasicDBObject obj2 = new BasicDBObject().append("_id", "_id2")
+            .append("sparseUnique", new BasicDBObject());
+
+    BasicDBObject obj3 = new BasicDBObject().append("_id", "_id3")
+            .append("sparseUnique", new BasicDBObject());
+
+    BasicDBObject obj4 = new BasicDBObject().append("_id", "_id1")
+            .append("sparseUnique", new BasicDBObject("subdoc","42"));
+    collection.insert(obj1);
+    collection.insert(obj2);
+    collection.insert(obj3);
+    boolean sawException = false;
+    try {
+      collection.insert(obj4);
+    } catch (DuplicateKeyException e) {
+      sawException = true;
+    }
+    DBCursor result = collection.find(new BasicDBObject("sparseUnique.subdoc", "42"));
+    Assertions.assertThat(result.size()).isEqualTo(1);
+    Assertions.assertThat(sawException).isEqualTo(true);
+    DBCursor result3 = collection.find(new BasicDBObject("sparseUnique", new BasicDBObject("$exists", true)));
+    Assertions.assertThat(result3.size()).isEqualTo(3);
+  }
+
+  @Test
   public void textSearch() {
     BasicDBObject obj1 = new BasicDBObject().append("_id", "_id1")
             .append("textField", "tomorrow, and tomorrow, and tomorrow, creeps in this petty pace");
