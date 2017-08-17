@@ -4,6 +4,7 @@ import com.github.fakemongo.impl.ExpressionParser;
 import com.github.fakemongo.impl.Filter;
 import com.github.fakemongo.impl.Util;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.FongoDBCollection;
 
@@ -370,10 +371,49 @@ public abstract class IndexAbstract<T extends DBObject> {
 
   /**
    * Create the key for the hashmap.
+   * TODO: This is actually an invalid key model. If a field within a list is indexed, one document produces multiple keys
    */
   T getKeyFor(DBObject object) {
     DBObject applyProjections = FongoDBCollection.applyProjections(object, keys);
-    return (T) applyProjections;
+    return (T) pruneEmptyListObjects(applyProjections);
+  }
+
+  // Applying the projection may leave some empty objects within lists.
+  // For example, if our full document is: { _id: 1, list: [ {foo: 7}, {foo: 8}, {bar: 6}, {baz: 3} ] }
+  // Then a projection of { "list.foo": 1 } will result in: { list: [ {foo: 7}, {foo: 8}, {}, {} ] }
+  // This poses a problem for unique indexes, because the same values for indexed fields can have 
+  // different projections in the presence of list size variation. 
+  private DBObject pruneEmptyListObjects(DBObject projectedObject) {
+    BasicDBObject ret = new BasicDBObject();
+    for (String projectionKey : projectedObject.keySet()) {
+      final Object projectedValue = projectedObject.get(projectionKey);
+      if (projectedValue instanceof List) {
+        BasicDBList prunedList = pruneList((List) projectedValue);
+        ret.put(projectionKey, prunedList);
+      } else if (ExpressionParser.isDbObject(projectedValue)) {
+        ret.put(projectionKey, pruneEmptyListObjects((DBObject) projectedValue));
+      } else {
+        ret.put(projectionKey, projectedValue);
+      }
+    }
+    return ret;
+  }
+
+  private BasicDBList pruneList(List inList) {
+    BasicDBList ret = new BasicDBList();
+
+    for (Object listItem : inList) {
+      if (listItem instanceof List) {
+        ret.add((List) listItem);
+      } else if (listItem instanceof DBObject){
+        if (!((DBObject) listItem).keySet().isEmpty()) {
+          ret.add(listItem);
+        }
+      } else {
+        ret.add(listItem);
+      }
+    }
+    return ret;
   }
 
   private List<List<Object>> extractFields(DBObject dbObject, Collection<String> fields) {
