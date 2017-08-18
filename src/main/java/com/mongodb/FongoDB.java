@@ -1,5 +1,12 @@
 package com.mongodb;
 
+import com.github.fakemongo.Fongo;
+import com.github.fakemongo.impl.Aggregator;
+import com.github.fakemongo.impl.ExpressionParser;
+import com.github.fakemongo.impl.geo.GeoUtil;
+import com.mongodb.connection.ServerVersion;
+import com.mongodb.util.JSON;
+import com.vividsolutions.jts.geom.Coordinate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -8,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
@@ -16,14 +22,6 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.fakemongo.Fongo;
-import com.github.fakemongo.impl.Aggregator;
-import com.github.fakemongo.impl.ExpressionParser;
-import com.github.fakemongo.impl.geo.GeoUtil;
-import com.mongodb.connection.ServerVersion;
-import com.mongodb.util.JSON;
-import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * fongo override of com.mongodb.DB
@@ -86,16 +84,16 @@ public class FongoDB extends DB {
 
   @Override
   protected synchronized FongoDBCollection doGetCollection(String name) {
-    return doGetCollection(name, false);
+    return doGetCollection(name, false, true);
   }
 
   /**
    * Only for aggregation.
    */
-  public synchronized FongoDBCollection doGetCollection(String name, boolean idIsNotUniq) {
+  public synchronized FongoDBCollection doGetCollection(String name, boolean idIsNotUniq, boolean validateOnInsert) {
     FongoDBCollection coll = collMap.get(name);
     if (coll == null) {
-      coll = new FongoDBCollection(this, name, idIsNotUniq);
+      coll = new FongoDBCollection(this, name, idIsNotUniq, validateOnInsert);
       collMap.put(name, coll);
     }
     return coll;

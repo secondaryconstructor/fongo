@@ -1,8 +1,20 @@
 package com.mongodb;
 
-import static com.mongodb.assertions.Assertions.isTrueArgument;
-import static java.util.Collections.emptyList;
-
+import com.github.fakemongo.FongoException;
+import com.github.fakemongo.impl.Aggregator;
+import com.github.fakemongo.impl.ExpressionParser;
+import com.github.fakemongo.impl.Filter;
+import com.github.fakemongo.impl.MapReduce;
+import com.github.fakemongo.impl.Tuple2;
+import com.github.fakemongo.impl.UpdateEngine;
+import com.github.fakemongo.impl.Util;
+import com.github.fakemongo.impl.geo.GeoUtil;
+import com.github.fakemongo.impl.index.GeoIndex;
+import com.github.fakemongo.impl.index.IndexAbstract;
+import com.github.fakemongo.impl.index.IndexFactory;
+import com.github.fakemongo.impl.text.TextSearch;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,7 +27,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.bson.BSON;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -33,24 +44,11 @@ import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.fakemongo.FongoException;
-import com.github.fakemongo.impl.Aggregator;
-import com.github.fakemongo.impl.ExpressionParser;
-import com.github.fakemongo.impl.Filter;
-import com.github.fakemongo.impl.MapReduce;
-import com.github.fakemongo.impl.Tuple2;
-import com.github.fakemongo.impl.UpdateEngine;
-import com.github.fakemongo.impl.Util;
-import com.github.fakemongo.impl.geo.GeoUtil;
-import com.github.fakemongo.impl.index.GeoIndex;
-import com.github.fakemongo.impl.index.IndexAbstract;
-import com.github.fakemongo.impl.index.IndexFactory;
-import com.github.fakemongo.impl.text.TextSearch;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+
+import static com.mongodb.assertions.Assertions.isTrueArgument;
+import static java.util.Collections.emptyList;
 
 /**
  * fongo override of com.mongodb.DBCollection
@@ -64,6 +62,7 @@ public class FongoDBCollection extends DBCollection {
   public static final String FONGO_SPECIAL_ORDER_BY = "$$$$$FONGO_ORDER_BY$$$$$";
 
   private static final String ID_NAME_INDEX = "_id_";
+  private static final String SYSTEM_INDEXES_COLL_NAME = "system.indexes";
   private final FongoDB fongoDb;
   private final ExpressionParser expressionParser;
   private final UpdateEngine updateEngine;
@@ -72,16 +71,18 @@ public class FongoDBCollection extends DBCollection {
   // Fields/Index
   private final List<IndexAbstract> indexes = new ArrayList<IndexAbstract>();
   private final IndexAbstract _idIndex;
+  private final boolean validateOnInsert;
 
   private final String SYSTEM_ELEMENT = "system.";
 
   public FongoDBCollection(FongoDB db, String name) {
-    this(db, name, false);
+    this(db, name, false, true);
   }
 
-  public FongoDBCollection(FongoDB db, String name, boolean idIsNotUniq) {
+  public FongoDBCollection(FongoDB db, String name, boolean idIsNotUniq, boolean validateOnInsert) {
     super(db, name);
     this.fongoDb = db;
+    this.validateOnInsert = validateOnInsert;
     this.nonIdCollection = name.startsWith(SYSTEM_ELEMENT);
     this.expressionParser = new ExpressionParser();
     this.updateEngine = new UpdateEngine();
@@ -121,6 +122,11 @@ public class FongoDBCollection extends DBCollection {
       // Save the id field in the caller.
       if (!(obj instanceof LazyDBObject) && obj.get(ID_FIELD_NAME) == null) {
         obj.put(ID_FIELD_NAME, Util.clone(id));
+      }
+
+      if (!this.getName().equalsIgnoreCase(SYSTEM_INDEXES_COLL_NAME) && validateOnInsert) {
+        // validate objects for regular collections (exclude system indexes which can support . their keys and possibly have other discrepancies)
+        _checkObject(obj, false, false);
       }
 
       putSizeCheck(cloned, writeConcern);
@@ -492,7 +498,7 @@ public class FongoDBCollection extends DBCollection {
 
   @Override
   public synchronized void createIndex(final DBObject keys, final DBObject options) {
-    DBCollection indexColl = fongoDb.getCollection("system.indexes");
+    DBCollection indexColl = fongoDb.getCollection(SYSTEM_INDEXES_COLL_NAME);
     BasicDBObject rec = new BasicDBObject();
     rec.append("v", 1);
     rec.append("key", keys);
