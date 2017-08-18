@@ -1,7 +1,6 @@
 package com.github.fakemongo;
 
 import ch.qos.logback.classic.Level;
-import static com.github.fakemongo.ExpectedMongoException.expectWriteConcernException;
 import com.github.fakemongo.impl.ExpressionParser;
 import com.github.fakemongo.impl.Util;
 import com.github.fakemongo.junit.FongoRule;
@@ -46,7 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import org.assertj.core.api.Assertions;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.assertj.core.util.Lists;
 import org.bson.BSON;
 import org.bson.Document;
@@ -55,12 +53,6 @@ import org.bson.types.Binary;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,6 +60,16 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
+
+
+import static com.github.fakemongo.ExpectedMongoException.expectWriteConcernException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class FongoTest {
 
@@ -160,7 +162,14 @@ public class FongoTest {
     assertEquals(2, collection.count(new BasicDBObject("n", 2)));
   }
 
-  @Test
+    @Test(expected = IllegalArgumentException.class)
+    public void should_not_allow_creating_docs_with_dot_in_key() {
+        DB db = fongoRule.getDB("db");
+        final DBCollection coll = db.createCollection("coll", null);
+        coll.insert(new BasicDBObject("a.b", 1));
+    }
+
+    @Test
   public void testCountOnCursor() {
     DBCollection collection = newCollection();
     collection.insert(new BasicDBObject("n", 1));
