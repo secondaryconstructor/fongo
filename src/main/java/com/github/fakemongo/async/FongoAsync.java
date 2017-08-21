@@ -75,8 +75,8 @@ public class FongoAsync implements AsyncOperationExecutor {
   public FongoAsync(final String name, final ServerVersion serverVersion, final CodecRegistry codecRegistry) {
     this.name = name;
     this.serverAddress = new ServerAddress(new InetSocketAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort()));
-    this.mongo = createMongo();
     this.fongo = new Fongo(name, serverVersion, codecRegistry);
+    this.mongo = createMongo();
   }
 
   /**
