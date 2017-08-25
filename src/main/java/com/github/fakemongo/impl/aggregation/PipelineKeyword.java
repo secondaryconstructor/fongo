@@ -5,7 +5,6 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.FongoDB;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +48,7 @@ public abstract class PipelineKeyword {
   }
 
   protected DBCollection createAndInsert(List<DBObject> objects) {
-    DBCollection coll = fongo.doGetCollection(UUID.randomUUID().toString(), true);
+    DBCollection coll = fongo.doGetCollection(UUID.randomUUID().toString(), true, false);
     coll.insert(objects);
     return coll;
   }
