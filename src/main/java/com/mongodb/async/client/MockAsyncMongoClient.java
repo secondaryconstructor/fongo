@@ -17,7 +17,7 @@ public class MockAsyncMongoClient extends MongoClientImpl {
   public static MockAsyncMongoClient create(FongoAsync fongoAsync) {
     // using objenesis here to prevent default constructor from spinning up background threads.
 //    MockAsyncMongoClient client = new ObjenesisStd().getInstantiatorOf(MockAsyncMongoClient.class).newInstance();
-    MongoClientSettings settings = MongoClientSettings.builder().build();
+    MongoClientSettings settings = MongoClientSettings.builder().codecRegistry(fongoAsync.getFongo().getCodecRegistry()).build();
     MockAsyncMongoClient client = new MockAsyncMongoClient(fongoAsync, settings, new Cluster() {
       @Override
       public ClusterSettings getSettings() {
