@@ -4,17 +4,23 @@ import com.github.fakemongo.impl.ExpressionParser;
 import com.github.fakemongo.impl.Filter;
 import com.github.fakemongo.impl.Util;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.FongoDBCollection;
+
 import static com.mongodb.FongoDBCollection.ID_FIELD_NAME;
+
 import com.mongodb.MongoException;
 import com.mongodb.QueryOperators;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+
 import org.bson.types.Binary;
 
 /**
@@ -31,15 +37,17 @@ public abstract class IndexAbstract<T extends DBObject> {
   private final DBObject keys;
   private final Set<String> fields;
   private final boolean unique;
+  private final boolean sparse;
   int lookupCount = 0;
 
-  IndexAbstract(String name, DBObject keys, boolean unique, Map<T, IndexedList<T>> mapValues, String geoIndex) throws MongoException {
+  IndexAbstract(String name, DBObject keys, boolean unique, Map<T, IndexedList<T>> mapValues, String geoIndex, boolean sparse) throws MongoException {
     this.name = name;
     this.fields = Collections.unmodifiableSet(keys.keySet()); // Setup BEFORE keys.
     this.keys = prepareKeys(keys);
     this.unique = unique;
     this.mapValues = mapValues;
     this.geoIndex = geoIndex;
+    this.sparse = sparse;
 
     for (Object value : keys.toMap().values()) {
       if (!(value instanceof String) && !(value instanceof Number)) {
@@ -90,6 +98,10 @@ public abstract class IndexAbstract<T extends DBObject> {
     return unique;
   }
 
+  public boolean isSparse() {
+    return sparse;
+  }
+
   public boolean isGeoIndex() {
     return geoIndex != null;
   }
@@ -113,13 +125,18 @@ public abstract class IndexAbstract<T extends DBObject> {
     }
 
     T key = getKeyFor(object);
+    // In a sparse index, we only add to the index if the full key is there.
+    if (sparse && isPartialKey(key)) {
+      return Collections.emptyList();
+    }
 
     if (unique) {
       // Unique must check if he's really unique.
       if (mapValues.containsKey(key)) {
         return extractFields(object, key.keySet());
       }
-      mapValues.put(key, new IndexedList<T>(Collections.singletonList(embedded(object)))); // DO NOT CLONE !
+      T toAdd = embedded(object);
+      mapValues.put(key, new IndexedList<T>(Collections.singletonList(toAdd))); // DO NOT CLONE !
     } else {
       // Extract previous values
       IndexedList<T> values = mapValues.get(key);
@@ -134,6 +151,33 @@ public abstract class IndexAbstract<T extends DBObject> {
       values.add(toAdd);
     }
     return Collections.emptyList();
+  }
+
+  private boolean isPartialKey(T key) {
+    final Set<String> keyProjections = generateProjections(key, "");
+    return !getFields().equals(keyProjections);
+  }
+
+  private Set<String> generateProjections(T object, final String parentPath) {
+    final Set<String> rval = new TreeSet<String>();
+    for (String objectKey : object.keySet()) {
+      Object value = object.get(objectKey);
+      if (value instanceof List) {
+        List valueList = (List) value;
+        for (Object listItem : valueList) {
+          if (listItem instanceof DBObject) {
+            rval.addAll(generateProjections((T) listItem, parentPath + objectKey + "."));
+          } else {
+            rval.add(parentPath + objectKey);
+          }
+        }
+      } else if (value instanceof DBObject) {
+        rval.addAll(generateProjections((T) value, parentPath + objectKey + "."));
+      } else {
+        rval.add(parentPath + objectKey);
+      }
+    }
+    return rval;
   }
 
   public abstract T embedded(DBObject object);
@@ -327,10 +371,49 @@ public abstract class IndexAbstract<T extends DBObject> {
 
   /**
    * Create the key for the hashmap.
+   * TODO: This is actually an invalid key model. If a field within a list is indexed, one document produces multiple keys
    */
   T getKeyFor(DBObject object) {
     DBObject applyProjections = FongoDBCollection.applyProjections(object, keys);
-    return (T) applyProjections;
+    return (T) pruneEmptyListObjects(applyProjections);
+  }
+
+  // Applying the projection may leave some empty objects within lists.
+  // For example, if our full document is: { _id: 1, list: [ {foo: 7}, {foo: 8}, {bar: 6}, {baz: 3} ] }
+  // Then a projection of { "list.foo": 1 } will result in: { list: [ {foo: 7}, {foo: 8}, {}, {} ] }
+  // This poses a problem for unique indexes, because the same values for indexed fields can have 
+  // different projections in the presence of list size variation. 
+  private DBObject pruneEmptyListObjects(DBObject projectedObject) {
+    BasicDBObject ret = new BasicDBObject();
+    for (String projectionKey : projectedObject.keySet()) {
+      final Object projectedValue = projectedObject.get(projectionKey);
+      if (projectedValue instanceof List) {
+        BasicDBList prunedList = pruneList((List) projectedValue);
+        ret.put(projectionKey, prunedList);
+      } else if (ExpressionParser.isDbObject(projectedValue)) {
+        ret.put(projectionKey, pruneEmptyListObjects((DBObject) projectedValue));
+      } else {
+        ret.put(projectionKey, projectedValue);
+      }
+    }
+    return ret;
+  }
+
+  private BasicDBList pruneList(List inList) {
+    BasicDBList ret = new BasicDBList();
+
+    for (Object listItem : inList) {
+      if (listItem instanceof List) {
+        ret.add((List) listItem);
+      } else if (listItem instanceof DBObject){
+        if (!((DBObject) listItem).keySet().isEmpty()) {
+          ret.add(listItem);
+        }
+      } else {
+        ret.add(listItem);
+      }
+    }
+    return ret;
   }
 
   private List<List<Object>> extractFields(DBObject dbObject, Collection<String> fields) {
