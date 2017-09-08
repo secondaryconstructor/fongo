@@ -12,6 +12,17 @@ import com.mongodb.QueryOperators;
 import com.mongodb.util.FongoJSON;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import org.bson.LazyBSONList;
+import org.bson.types.Binary;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
+import org.bson.types.ObjectId;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,15 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import org.bson.LazyBSONList;
-import org.bson.types.Binary;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
-import org.bson.types.ObjectId;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings("javadoc")
@@ -710,6 +712,9 @@ public class ExpressionParser {
       List queryList = (List) queryValue;
       List storedList = (List) storedValue;
       return compareLists(queryList, storedList, comparableFilter);
+    } else if (queryValue!=null && storedValue != null
+        && queryValue.getClass().isArray() && storedValue.getClass().isArray()) {
+      return compareArrays(queryValue, storedValue, comparableFilter);
     } else {
       Object queryComp = typecast("query value", queryValue, Object.class);
       if (comparableFilter && !(storedValue instanceof Comparable)) {
@@ -885,8 +890,58 @@ public class ExpressionParser {
     return 0;
   }
 
+  private Integer compareArrays(Object queryList, Object storedList, boolean comparableFilter) {
+    int queryListSize = Array.getLength(queryList);
+    int storedListSize = Array.getLength(storedList);
+
+    int sizeDiff = Array.getLength(queryList) - storedListSize;
+    if (sizeDiff != 0) {
+      if (sizeDiff > 0 && Array.get(queryList, storedListSize) instanceof MinKey) {
+        return -1; // Minkey is ALWAYS first, even if other is null
+      }
+      if (sizeDiff < 0 && Array.get(storedList, queryListSize) instanceof MinKey) {
+        return 1; // Minkey is ALWAYS first, even if other is null
+      }
+      if (sizeDiff < 0 && Array.get(storedList, queryListSize) instanceof MaxKey) {
+        return -1; // MaxKey is ALWAYS last, even if other is null
+      }
+      if (sizeDiff > 0 && Array.get(queryList, storedListSize) instanceof MaxKey) {
+        return 1; // MaxKey is ALWAYS last, even if other is null
+      }
+      // Special case : {x : null} and "no x" is equal.
+      boolean bothEmpty = isArrayEmptyOrContainsOnlyNull(storedList) && isArrayEmptyOrContainsOnlyNull(queryList);
+      if (bothEmpty) {
+        return 0;
+      }
+      return sizeDiff;
+    }
+
+    for (int i = 0, length = queryListSize; i < length; i++) {
+      Integer compareValue = compareObjects(Array.get(queryList, i), Array.get(storedList, i), comparableFilter);
+      if (compareValue == null) {
+        return -1; // Arbitrary
+      }
+      if (compareValue != 0) {
+        return compareValue;
+      }
+    }
+    return 0;
+  }
+
   private boolean isEmptyOrContainsOnlyNull(List list) {
     for (Object obj : list) {
+      if (obj != null) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean isArrayEmptyOrContainsOnlyNull(Object array) {
+    int arraySize = Array.getLength(array);
+
+    for (int i=0; i<arraySize; i++) {
+      Object obj = Array.get(array, i);
       if (obj != null) {
         return false;
       }
