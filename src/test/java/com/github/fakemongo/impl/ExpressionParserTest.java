@@ -5,6 +5,18 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.github.fakemongo.Fongo;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBObject;
+import com.mongodb.DBRef;
+import org.bson.types.Binary;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
+import org.bson.types.ObjectId;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,19 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.bson.types.Binary;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
-import org.bson.types.ObjectId;
-import org.junit.Test;
-
-import com.github.fakemongo.Fongo;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBObject;
-import com.mongodb.DBRef;
 
 @SuppressWarnings("javadoc")
 public class ExpressionParserTest {
@@ -773,6 +772,8 @@ public class ExpressionParserTest {
     assertTrue(0 < expressionParser.compareObjects(new BasicDBObject("a", 3), new BasicDBObject("a", 1)));
     assertTrue(0 < expressionParser.compareObjects(new BasicDBObject("a", asList(2, 3)), new BasicDBObject("a", asList(1, 2))));
     assertTrue(0 < expressionParser.compareObjects(new BasicDBList(), new BasicDBObject()));
+    assertTrue(0 < expressionParser.compareObjects(new BasicDBObject("a", new byte[]{(byte)0x00,(byte)0x01}),new BasicDBObject("a", new byte[]{(byte)0x01})));
+    assertTrue(0 == expressionParser.compareObjects(new BasicDBObject("a", new byte[]{(byte)0x00,(byte)0x00}),new BasicDBObject("a", new byte[]{(byte)0x00, (byte)0x00})));
   }
 
   @Test
