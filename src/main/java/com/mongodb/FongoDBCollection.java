@@ -1176,13 +1176,24 @@ public class FongoDBCollection extends DBCollection {
         removedCount += wr.getN();
       } else if (req instanceof InsertRequest) {
         InsertRequest r = (InsertRequest) req;
-        wr = insert(r.getDocument());
-        insertedCount += wr.getN();
+        try {
+          wr = insert(r.getDocument());
+          insertedCount += wr.getN();
+        } catch (WriteConcernException e) {
+          BulkWriteResult bulkWriteResult
+              = createBulkWriteResult(writeConcern, insertedCount, matchedCount, removedCount, modifiedCount, upserts);
+          throw new InsertManyWriteConcernException(bulkWriteResult, idx, e);
+        }
       } else {
         throw new NotImplementedException();
       }
       idx++;
     }
+    return createBulkWriteResult(writeConcern, insertedCount, matchedCount, removedCount, modifiedCount, upserts);
+  }
+
+  private static BulkWriteResult createBulkWriteResult(WriteConcern writeConcern,
+      int insertedCount, int matchedCount, int removedCount, int modifiedCount, List<BulkWriteUpsert> upserts) {
     if (!writeConcern.isAcknowledged()) {
       return new UnacknowledgedBulkWriteResult();
     }

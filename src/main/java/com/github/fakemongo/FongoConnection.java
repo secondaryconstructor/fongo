@@ -17,6 +17,7 @@ import static com.mongodb.FongoDBCollection.dbObject;
 import static com.mongodb.FongoDBCollection.dbObjects;
 import static com.mongodb.FongoDBCollection.decode;
 import static com.mongodb.FongoDBCollection.decoderContext;
+import com.mongodb.InsertManyWriteConcernException;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoNamespace;
@@ -216,6 +217,10 @@ public class FongoConnection implements Connection {
       }
       final com.mongodb.BulkWriteResult bulkWriteResult = bulkWriteOperation.execute(writeConcern);
       bulkWriteBatchCombiner.addResult(bulkWriteResult(bulkWriteResult), indexMap);
+    } catch (InsertManyWriteConcernException writeException) {
+      indexMap.add(writeException.getErroneousIndex(), writeException.getErroneousIndex());
+      bulkWriteBatchCombiner.addResult(bulkWriteResult(writeException.getBulkWriteResult()), indexMap);
+      bulkWriteBatchCombiner.addWriteErrorResult(getBulkWriteError(writeException, writeException.getErroneousIndex()), indexMap);
     } catch (WriteConcernException writeException) {
       if (writeException.getResponse().get("wtimeout") != null) {
         bulkWriteBatchCombiner.addWriteConcernErrorResult(getWriteConcernError(writeException));
@@ -229,8 +234,12 @@ public class FongoConnection implements Connection {
   private static final List<String> IGNORED_KEYS = asList("ok", "err", "code");
 
   BulkWriteError getBulkWriteError(final WriteConcernException writeException) {
+    return getBulkWriteError(writeException, 0);
+  }
+
+  BulkWriteError getBulkWriteError(final WriteConcernException writeException, int index) {
     return new BulkWriteError(writeException.getErrorCode(), writeException.getErrorMessage(),
-        translateGetLastErrorResponseToErrInfo(writeException.getResponse()), 0);
+        translateGetLastErrorResponseToErrInfo(writeException.getResponse()), index);
   }
 
   WriteConcernError getWriteConcernError(final WriteConcernException writeException) {
