@@ -1,23 +1,24 @@
 package com.mongodb;
 
-public class InsertManyWriteConcernException extends WriteConcernException {
+import java.util.List;
+import static java.util.Collections.emptyList;
 
-  private BulkWriteResult bulkWriteResult;
-  private int erroneousIndex;
+public class InsertManyWriteConcernException extends RuntimeException {
 
-  public InsertManyWriteConcernException(BulkWriteResult bulkWriteResult, int erroneousIndex, WriteConcernException e) {
-    super(e.getResponse(), e.getServerAddress(), e.getWriteConcernResult());
+  private BulkWriteResult result;
+  private List<FongoBulkWriteCombiner.WriteError> errors = emptyList();
 
-    this.bulkWriteResult = bulkWriteResult;
-    this.erroneousIndex = erroneousIndex;
+  public InsertManyWriteConcernException(BulkWriteResult result, List<FongoBulkWriteCombiner.WriteError> errors) {
+    this.result = result;
+    this.errors = errors;
   }
 
-  public BulkWriteResult getBulkWriteResult() {
-    return bulkWriteResult;
+  public BulkWriteResult getResult() {
+    return result;
   }
 
-  public int getErroneousIndex() {
-    return erroneousIndex;
+  public List<FongoBulkWriteCombiner.WriteError> getErrors() {
+    return errors;
   }
 
 }

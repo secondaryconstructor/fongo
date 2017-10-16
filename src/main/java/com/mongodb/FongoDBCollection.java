@@ -537,7 +537,7 @@ public class FongoDBCollection extends DBCollection {
     if (sparse) {
       rec.append("sparse", sparse);
     }
-    
+
     rec.putAll(options);
 
     try {
@@ -1171,77 +1171,51 @@ public class FongoDBCollection extends DBCollection {
     return cursors;
   }
 
-
   @Override
   BulkWriteResult executeBulkWriteOperation(final boolean ordered, final Boolean bypassDocumentValidation,
                                             final List<WriteRequest> writeRequests,
                                             final WriteConcern aWriteConcern) {
     isTrueArgument("writes is not an empty list", !writeRequests.isEmpty());
     WriteConcern writeConcern = aWriteConcern == null ? getWriteConcern() : aWriteConcern;
-    // TODO: unordered
-    List<BulkWriteUpsert> upserts = new ArrayList<BulkWriteUpsert>();
-    int insertedCount = 0;
-    int matchedCount = 0;
-    int removedCount = 0;
-    int modifiedCount = 0;
     int idx = 0;
+    FongoBulkWriteCombiner combiner = new FongoBulkWriteCombiner(writeConcern);
+
     for (WriteRequest req : writeRequests) {
       WriteResult wr;
       if (req instanceof ReplaceRequest) {
         ReplaceRequest r = (ReplaceRequest) req;
         _checkObject(r.getDocument(), false, false);
         wr = update(r.getQuery(), r.getDocument(), r.isUpsert(), /* r.isMulti()*/ false, writeConcern, null);
-        matchedCount += wr.getN();
-        modifiedCount += wr.getN();
-        if (!wr.isUpdateOfExisting()) {
-          if (wr.getUpsertedId() != null) {
-            upserts.add(new BulkWriteUpsert(idx, wr.getUpsertedId()));
-          }
-        }
+        combiner.addReplaceResult(idx, wr);
       } else if (req instanceof UpdateRequest) {
         UpdateRequest r = (UpdateRequest) req;
         // See com.mongodb.DBCollectionImpl.Run.executeUpdates()
         checkMultiUpdateDocument(r.getUpdate());
 
         wr = update(r.getQuery(), r.getUpdate(), r.isUpsert(), r.isMulti(), writeConcern, null);
-        if (wr.isUpdateOfExisting()) {
-          matchedCount += wr.getN();
-          modifiedCount += wr.getN();
-        } else {
-          if (wr.getUpsertedId() != null) {
-            upserts.add(new BulkWriteUpsert(idx, wr.getUpsertedId()));
-//            insertedCount++;
-          }
-        }
+        combiner.addUpdateResult(idx, wr);
       } else if (req instanceof RemoveRequest) {
         RemoveRequest r = (RemoveRequest) req;
         wr = remove(r.getQuery(), writeConcern, null);
-        matchedCount += wr.getN();
-        removedCount += wr.getN();
+        combiner.addRemoveResult(wr);
       } else if (req instanceof InsertRequest) {
         InsertRequest r = (InsertRequest) req;
         try {
           wr = insert(r.getDocument());
-          insertedCount += wr.getN();
+          combiner.addInsertResult(wr);
         } catch (WriteConcernException e) {
-          BulkWriteResult bulkWriteResult
-              = createBulkWriteResult(writeConcern, insertedCount, matchedCount, removedCount, modifiedCount, upserts);
-          throw new InsertManyWriteConcernException(bulkWriteResult, idx, e);
+          combiner.addInsertError(idx, e);
+          if (ordered) {
+            break;
+          }
         }
       } else {
         throw new NotImplementedException();
       }
       idx++;
     }
-    return createBulkWriteResult(writeConcern, insertedCount, matchedCount, removedCount, modifiedCount, upserts);
-  }
-
-  private static BulkWriteResult createBulkWriteResult(WriteConcern writeConcern,
-      int insertedCount, int matchedCount, int removedCount, int modifiedCount, List<BulkWriteUpsert> upserts) {
-    if (!writeConcern.isAcknowledged()) {
-      return new UnacknowledgedBulkWriteResult();
-    }
-    return new AcknowledgedBulkWriteResult(insertedCount, matchedCount, removedCount, modifiedCount, upserts);
+    combiner.throwOnError();
+    return combiner.getBulkWriteResult(writeConcern);
   }
 
   // @Override
