@@ -9,6 +9,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.FongoBulkWriteCombiner;
 import com.mongodb.FongoDB;
 import com.mongodb.FongoDBCollection;
 import static com.mongodb.FongoDBCollection.bsonDocument;
@@ -199,7 +200,7 @@ public class FongoConnection implements Connection {
     final DBCollection collection = dbCollection(namespace);
     BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(fongo.getServerAddress(), ordered, writeConcern);
     IndexMap indexMap = IndexMap.create();
-    final BulkWriteOperation bulkWriteOperation = collection.initializeOrderedBulkOperation();
+    final BulkWriteOperation bulkWriteOperation = ordered ? collection.initializeOrderedBulkOperation() : collection.initializeUnorderedBulkOperation();
 
     try {
       for (InsertRequest insert : inserts) {
@@ -223,9 +224,11 @@ public class FongoConnection implements Connection {
       final com.mongodb.BulkWriteResult bulkWriteResult = bulkWriteOperation.execute(writeConcern);
       bulkWriteBatchCombiner.addResult(bulkWriteResult(bulkWriteResult), indexMap);
     } catch (InsertManyWriteConcernException writeException) {
-      indexMap.add(writeException.getErroneousIndex(), writeException.getErroneousIndex());
-      bulkWriteBatchCombiner.addResult(bulkWriteResult(writeException.getBulkWriteResult()), indexMap);
-      bulkWriteBatchCombiner.addWriteErrorResult(getBulkWriteError(writeException, writeException.getErroneousIndex()), indexMap);
+      bulkWriteBatchCombiner.addResult(bulkWriteResult(writeException.getResult()), indexMap);
+      for (FongoBulkWriteCombiner.WriteError writeError : writeException.getErrors()) {
+        indexMap.add(writeError.getIndex(), writeError.getIndex());
+        bulkWriteBatchCombiner.addWriteErrorResult(getBulkWriteError(writeError.getException(), writeError.getIndex()), indexMap);
+      }
     } catch (WriteConcernException writeException) {
       if (writeException.getResponse().get("wtimeout") != null) {
         bulkWriteBatchCombiner.addWriteConcernErrorResult(getWriteConcernError(writeException));
