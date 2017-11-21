@@ -1513,6 +1513,17 @@ public class FongoDBCollection extends DBCollection {
     return list;
   }
 
+  public static BsonArray bsonArray(List<?> list) {
+    if (list == null) {
+      return null;
+    }
+
+    final BasicDBList dbList = new BasicDBList();
+    dbList.addAll(list);
+
+    return bsonDocument(new BasicDBObject("array", dbList)).getArray("array");
+  }
+
   public static BsonDocument bsonDocument(DBObject dbObject) {
     if (dbObject == null) {
       return null;
