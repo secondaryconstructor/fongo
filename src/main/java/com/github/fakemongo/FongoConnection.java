@@ -12,6 +12,7 @@ import com.mongodb.DBObject;
 import com.mongodb.FongoBulkWriteCombiner;
 import com.mongodb.FongoDB;
 import com.mongodb.FongoDBCollection;
+import static com.mongodb.FongoDBCollection.bsonArray;
 import static com.mongodb.FongoDBCollection.bsonDocument;
 import static com.mongodb.FongoDBCollection.bsonDocuments;
 import static com.mongodb.FongoDBCollection.dbObject;
@@ -433,7 +434,7 @@ public class FongoConnection implements Connection {
       final DBCollection dbCollection = db.getCollection(command.get("distinct").asString().getValue());
       final DBObject query = dbObject(command, "query");
       final List<Object> distincts = dbCollection.distinct(command.getString("key").getValue(), query);
-      return (T) new BsonDocument("values", FongoBsonArrayWrapper.bsonArrayWrapper(distincts));
+      return reencode(commandResultDecoder, "values", bsonArray(distincts));
     } else if (command.containsKey("aggregate")) {
       final DBCollection dbCollection = db.getCollection(command.get("aggregate").asString().getValue());
       final AggregationOutput aggregate = dbCollection.aggregate(dbObjects(command, "pipeline"));
@@ -588,7 +589,11 @@ public class FongoConnection implements Connection {
   }
 
   private <T> T reencode(final Decoder<T> commandResultDecoder, final String resultField, final Iterable<DBObject> results) {
-    return commandResultDecoder.decode(new BsonDocumentReader(new BsonDocument(resultField, new BsonArray(bsonDocuments(results)))), decoderContext());
+    return reencode(commandResultDecoder, resultField, new BsonArray(bsonDocuments(results)));
+  }
+
+  private <T> T reencode(final Decoder<T> commandResultDecoder, final String resultField, final BsonArray results) {
+    return commandResultDecoder.decode(new BsonDocumentReader(new BsonDocument(resultField, results)), decoderContext());
   }
 
   private <T> T reencode(final Decoder<T> commandResultDecoder, final String resultField, final DBObject result) {

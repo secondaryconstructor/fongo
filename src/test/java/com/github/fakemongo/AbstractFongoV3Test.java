@@ -43,8 +43,14 @@ import org.assertj.core.api.Condition;
 import org.assertj.core.util.Lists;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonReader;
 import org.bson.BsonString;
+import org.bson.BsonWriter;
 import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+import org.bson.codecs.configuration.CodecRegistries;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
@@ -590,6 +596,28 @@ public abstract class AbstractFongoV3Test {
 
     // Then
     Assertions.assertThat(toList(distinctIterable)).containsExactly(5, 6);
+  }
+
+  @Test
+  public void distinct_must_use_codec() {
+    // Given
+    MongoCollection collection = newCollection()
+        .withCodecRegistry(CodecRegistries.fromRegistries(
+            MongoClient.getDefaultCodecRegistry(),
+            CodecRegistries.fromCodecs(new StringWrapperCodec())
+        ));
+
+    StringWrapper a = new StringWrapper("a");
+    StringWrapper b = new StringWrapper("b");
+
+    collection.insertOne(new Document("value", a));
+    collection.insertOne(new Document("value", b));
+
+    // When
+    final DistinctIterable distinctIterable = collection.distinct("value", StringWrapper.class);
+
+    // Then
+    Assertions.assertThat(toList(distinctIterable)).containsExactly(a, b);
   }
 
   @Test
@@ -1268,4 +1296,41 @@ public abstract class AbstractFongoV3Test {
     return fongoRule.newMongoCollection("db");
   }
 
+
+  private class StringWrapper {
+
+    final String value;
+
+    StringWrapper(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj == this || obj instanceof StringWrapper && value.equals(((StringWrapper)obj).value);
+    }
+
+    @Override
+    public String toString() {
+      return "StringWrapper(" + value + ")";
+    }
+  }
+
+
+  private class StringWrapperCodec implements Codec<StringWrapper> {
+    @Override
+    public StringWrapper decode(BsonReader reader, DecoderContext decoderContext) {
+      return new StringWrapper(reader.readString());
+    }
+
+    @Override
+    public void encode(BsonWriter writer, StringWrapper value, EncoderContext encoderContext) {
+      writer.writeString(value.value);
+    }
+
+    @Override
+    public Class<StringWrapper> getEncoderClass() {
+      return StringWrapper.class;
+    }
+  }
 }
