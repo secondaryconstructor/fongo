@@ -34,13 +34,8 @@ public class FongoBulkWriteCombiner {
   }
 
   public void addReplaceResult(int idx, WriteResult wr) {
-    matchedCount += wr.getN();
-    modifiedCount += wr.getN();
-    if (!wr.isUpdateOfExisting()) {
-      if (wr.getUpsertedId() != null) {
-        upserts.add(new BulkWriteUpsert(idx, wr.getUpsertedId()));
-      }
-    }
+    // Same logic applies
+    addUpdateResult(idx, wr);
   }
 
   public void addUpdateResult(int idx, WriteResult wr) {

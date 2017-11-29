@@ -298,9 +298,10 @@ public class FongoDBCollection extends DBCollection {
         o.put(ID_FIELD_NAME, Util.clone(o.get(ID_FIELD_NAME)));
       }
       @SuppressWarnings("unchecked") Iterator<DBObject> oldObjects = _idIndex.retrieveObjects(q).iterator();
-      if (oldObjects.hasNext() || upsert) {
+      if (oldObjects.hasNext()) {
         addToIndexes(Util.clone(o), oldObjects.hasNext() ? oldObjects.next() : null, concern);
         updatedDocuments++;
+        updatedExisting = true;
       }
     } else {
       Filter filter = buildFilter(q);
@@ -319,14 +320,14 @@ public class FongoDBCollection extends DBCollection {
           }
         }
       }
-      if (updatedDocuments == 0 && upsert) {
-        BasicDBObject newObject = createUpsertObject(q);
-        fInsert(updateEngine.doUpdate(newObject, o, q, true), concern);
+    }
+    if (updatedDocuments == 0 && upsert) {
+      BasicDBObject newObject = createUpsertObject(q);
+      fInsert(updateEngine.doUpdate(newObject, o, q, true), concern);
 
-        updatedDocuments++;
-        updatedExisting = false;
-        upsertedId = newObject.get(ID_FIELD_NAME);
-      }
+      updatedDocuments++;
+      updatedExisting = false;
+      upsertedId = newObject.get(ID_FIELD_NAME);
     }
     return updateResult(updatedDocuments, updatedExisting, upsertedId);
   }
