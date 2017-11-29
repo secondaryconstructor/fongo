@@ -1,13 +1,7 @@
 package com.github.fakemongo;
 
 import com.github.fakemongo.junit.FongoRule;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BulkWriteOperation;
-import com.mongodb.DBCollection;
-import com.mongodb.MongoBulkWriteException;
-import com.mongodb.MongoCommandException;
-import com.mongodb.MongoNamespace;
-import com.mongodb.WriteConcern;
+import com.mongodb.*;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.DistinctIterable;
@@ -683,6 +677,42 @@ public abstract class AbstractFongoV3Test {
         docId(1).append("x", 2), docId(3).append("x", 4), docId(4), docId(5), docId(6));
   }
 
+  // See http://mongodb.github.io/mongo-java-driver/3.0/driver/getting-started/quick-tour/
+  @Test
+  public void bulkWrite_ordered2() {
+    // 2. Ordered bulk operation - order is guaranteed
+    // Given
+    MongoCollection collection = newCollection();
+
+    // When
+    final BulkWriteResult bulkWriteResult = collection.bulkWrite(
+            Arrays.asList(
+                    new UpdateOneModel<Document>(new Document("_id", 1), new Document("$set", new Document("x", 1)), new UpdateOptions().upsert(false)),
+                    new UpdateOneModel<Document>(new Document("_id", 2), new Document("$set", new Document("x", 2)), new UpdateOptions().upsert(true)),
+                    new InsertOneModel<Document>(new Document("_id", 3)),
+                    new ReplaceOneModel<Document>(new Document("_id", 4), new Document("_id", 4).append("x", 4), new UpdateOptions().upsert(true))
+
+            )
+    );
+
+    // Then
+    Assertions.assertThat(bulkWriteResult.wasAcknowledged()).isTrue();
+    Assertions.assertThat(bulkWriteResult.getDeletedCount()).isEqualTo(0);
+    Assertions.assertThat(bulkWriteResult.getInsertedCount()).isEqualTo(1);
+    Assertions.assertThat(bulkWriteResult.getMatchedCount()).isEqualTo(0);
+    Assertions.assertThat(bulkWriteResult.getUpserts().size()).isEqualTo(2);
+    Assertions.assertThat(bulkWriteResult.getUpserts().get(0).getIndex()).isEqualTo(1);
+    Assertions.assertThat(bulkWriteResult.getUpserts().get(1).getIndex()).isEqualTo(3);
+//    Assertions.assertThat(bulkWriteResult.getModifiedCount()).isEqualTo(2);
+    Assertions.assertThat(toList(collection.find().sort(ascending("_id")))).containsExactly(
+            docId(2).append("x", 2),
+            docId(3),
+            docId(4).append("x", 4)
+    );
+
+
+  }
+  
   @Test
   public void bulkWrite_duplicatedKey() {
     // 2. Ordered bulk operation - order is guaranteed
@@ -914,6 +944,40 @@ public abstract class AbstractFongoV3Test {
     assertThat(updateResult.getUpsertedId()).isNull();
     if (!serverVersion().equals(Fongo.OLD_SERVER_VERSION)) {
       assertThat(updateResult.getModifiedCount()).isEqualTo(1L);
+    }
+  }
+
+  @Test
+  public void should_replaceOne_upsert_document() {
+    // Given
+    MongoCollection<Document> col = newCollection();
+
+    // When
+    final UpdateResult updateResult = col.replaceOne(eq("_id", 1), new Document("key", "value2"), new UpdateOptions().upsert(true));
+
+    // When
+    assertThat(toList(col.find())).containsOnly(new Document("_id", 1).append("key", "value2"));
+    assertThat(updateResult.getMatchedCount()).isEqualTo(0L);
+    assertThat(updateResult.getUpsertedId()).isEqualTo(new BsonInt32(1));
+    if (!serverVersion().equals(Fongo.OLD_SERVER_VERSION)) {
+      assertThat(updateResult.getModifiedCount()).isEqualTo(0L);
+    }
+  }
+
+  @Test
+  public void should_updateOne_upsert_document() {
+    // Given
+    MongoCollection<Document> col = newCollection();
+
+    // When
+    final UpdateResult updateResult = col.updateOne(eq("_id", 1), new Document("$set", new Document("key", "value2")), new UpdateOptions().upsert(true));
+
+    // When
+    assertThat(toList(col.find())).containsOnly(new Document("_id", 1).append("key", "value2"));
+    assertThat(updateResult.getMatchedCount()).isEqualTo(0L);
+    assertThat(updateResult.getUpsertedId()).isEqualTo(new BsonInt32(1));
+    if (!serverVersion().equals(Fongo.OLD_SERVER_VERSION)) {
+      assertThat(updateResult.getModifiedCount()).isEqualTo(0L);
     }
   }
 
