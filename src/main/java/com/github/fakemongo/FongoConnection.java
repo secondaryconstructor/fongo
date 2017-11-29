@@ -357,7 +357,7 @@ public class FongoConnection implements Connection {
       indexMap = indexMap.add(0, offset);
       BulkWriteResult bwr = bulkWriteResult(bulkWriteResult);
       int upsertCount = bwr.getUpserts().size();
-      offset += upsertCount;
+      offset += Math.max(upsertCount, 1);
       bulkWriteBatchCombiner.addResult(bwr, indexMap);
       idx++;
     }
