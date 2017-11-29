@@ -7,6 +7,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.ServerVersion;
@@ -22,6 +24,7 @@ import java.util.UUID;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +54,7 @@ public class FongoRule extends ExternalResource {
   private MongoClient mongo;
   private DB db;
   private MongoDatabase mongoDatabase;
+  private CodecRegistry codecRegistry;
 
   /**
    * Setup a rule with a real MongoDB.
@@ -60,15 +64,24 @@ public class FongoRule extends ExternalResource {
    * @param realMongo         set to true if you want to use a real mongoDB.
    * @param mongoClientIfReal real client to use if realMongo si true.
    */
-  public FongoRule(final String dbName, final ServerVersion serverVersion, final boolean realMongo, final MongoClient mongoClientIfReal) {
+  public FongoRule(final String dbName, final ServerVersion serverVersion, final boolean realMongo, final MongoClient mongoClientIfReal, final CodecRegistry codecRegistry) {
     this.dbName = dbName;
     this.realMongo = realMongo || "true".equals(System.getProperty("fongo.force.realMongo"));
-    this.fongo = realMongo ? null : newFongo(serverVersion);
+    this.fongo = realMongo ? null : newFongo(serverVersion, codecRegistry);
     this.mongo = mongoClientIfReal;
+    this.codecRegistry = codecRegistry;
+  }
+
+  public FongoRule(final String dbName, final ServerVersion serverVersion, final boolean realMongo, final MongoClient mongoClientIfReal) {
+    this(dbName, serverVersion, realMongo, mongoClientIfReal, MongoClient.getDefaultCodecRegistry());
   }
 
   public FongoRule() {
     this(DEFAULT_SERVER_VERSION);
+  }
+
+  public FongoRule(CodecRegistry codecRegistry) {
+    this(false, codecRegistry);
   }
 
   public FongoRule(final ServerVersion serverVersion) {
@@ -77,6 +90,10 @@ public class FongoRule extends ExternalResource {
 
   public FongoRule(boolean realMongo) {
     this(realMongo, DEFAULT_SERVER_VERSION);
+  }
+
+  public FongoRule(boolean realMongo, CodecRegistry codecRegistry) {
+    this(randomName(), DEFAULT_SERVER_VERSION, realMongo, null, codecRegistry);
   }
 
   public FongoRule(boolean realMongo, ServerVersion serverVersion) {
@@ -103,7 +120,8 @@ public class FongoRule extends ExternalResource {
   protected void before() throws UnknownHostException {
     if (realMongo) {
       if (mongo == null) {
-        mongo = new MongoClient();
+        MongoClientOptions options = MongoClientOptions.builder().codecRegistry(codecRegistry).build();
+        mongo = new MongoClient(new ServerAddress(), options);
       }
     } else {
       mongo = this.fongo.getMongo();
@@ -208,8 +226,8 @@ public class FongoRule extends ExternalResource {
     return mongoDatabase.getCollection(collectionName, documentClass);
   }
 
-  protected Fongo newFongo(ServerVersion serverVersion) {
-    return new Fongo("test", serverVersion);
+  protected Fongo newFongo(ServerVersion serverVersion, CodecRegistry codecRegistry) {
+    return new Fongo("test", serverVersion, codecRegistry);
   }
 
   public Fongo getFongo() {
