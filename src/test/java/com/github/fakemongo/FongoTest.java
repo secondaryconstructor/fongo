@@ -968,6 +968,17 @@ public class FongoTest {
   }
 
   @Test
+  public void testRenameOnFieldThatDoesNotExistDoesNothing() {
+    DBCollection collection = newCollection();
+    collection.insert(new BasicDBObject("_id", 1).append("a", "value"));
+    collection.update(new BasicDBObject("_id", 1), new BasicDBObject("$rename", new BasicDBObject("b", "a")));
+    List<DBObject> results = collection.find().toArray();
+    assertEquals(Arrays.asList(
+            new BasicDBObject("_id", 1).append("a", "value")
+    ), results);
+  }
+
+  @Test
   public void testCompoundDateIdUpserts() {
     DBCollection collection = newCollection();
     DBObject query = new BasicDBObjectBuilder().push("_id")

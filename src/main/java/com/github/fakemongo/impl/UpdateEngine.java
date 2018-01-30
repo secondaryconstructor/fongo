@@ -253,6 +253,7 @@ public class UpdateEngine {
       new BasicUpdate("$rename", true) {
         @Override
         void mergeAction(String subKey, DBObject subObject, Object object, DBObject objOriginal, boolean isCreated) {
+          if(!subObject.containsField(subKey)) return;
           Object objValue = subObject.removeField(subKey);
           String newKey = (String) object;
           Util.putValue(objOriginal, newKey, objValue);
