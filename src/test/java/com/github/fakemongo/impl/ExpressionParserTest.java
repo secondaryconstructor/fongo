@@ -109,6 +109,9 @@ public class ExpressionParserTest {
     assertQuery(new BasicDBObject("a", new BasicDBObject("$eq", 1)), Arrays.<DBObject>asList(
         new BasicDBObject("n", "neil").append("a", 1)
     ));
+    assertQuery(new BasicDBObject("a", new BasicDBObject("$eq", 1L)), Arrays.<DBObject>asList(
+        new BasicDBObject("n", "neil").append("a", 1)
+    ));
   }
 
   @Test
@@ -149,6 +152,20 @@ public class ExpressionParserTest {
         new BasicDBObject("a", 1),
         new BasicDBObject("b", 3),
         new BasicDBObject("a", asList(1, 2))
+    ), results);
+  }
+
+  @Test
+  public void testNeOperatorDifferentTypes() {
+    DBObject query = new BasicDBObjectBuilder().push("a").add("$ne", 1L).pop().get();
+
+    List<DBObject> results = doFilter(
+            query,
+            new BasicDBObject("a", 1),
+            new BasicDBObject("a", 2)
+    );
+    assertEquals(Collections.<DBObject>singletonList(
+            new BasicDBObject("a", 2)
     ), results);
   }
 
