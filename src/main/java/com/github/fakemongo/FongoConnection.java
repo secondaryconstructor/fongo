@@ -23,6 +23,7 @@ import com.mongodb.InsertManyWriteConcernException;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoNamespace;
+import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteConcernException;
 import com.mongodb.WriteConcernResult;
@@ -44,10 +45,12 @@ import com.mongodb.connection.ConnectionDescription;
 import com.mongodb.connection.QueryResult;
 import com.mongodb.connection.ServerId;
 import com.mongodb.connection.ServerVersion;
+import com.mongodb.connection.SplittablePayload;
 import com.mongodb.internal.connection.IndexMap;
 import com.mongodb.internal.validator.CollectibleDocumentFieldNameValidator;
 import com.mongodb.internal.validator.UpdateFieldNameValidator;
 import com.mongodb.operation.FongoBsonArrayWrapper;
+import com.mongodb.session.SessionContext;
 import com.mongodb.util.JSON;
 import java.util.ArrayList;
 import static java.util.Arrays.asList;
@@ -101,6 +104,21 @@ public class FongoConnection implements Connection {
   @Override
   public ConnectionDescription getDescription() {
     return connectionDescription;
+  }
+
+  @Override
+  public WriteConcernResult insert(MongoNamespace namespace, boolean ordered, InsertRequest insertRequest) {
+    return null;
+  }
+
+  @Override
+  public WriteConcernResult update(MongoNamespace namespace, boolean ordered, UpdateRequest updateRequest) {
+    return null;
+  }
+
+  @Override
+  public WriteConcernResult delete(MongoNamespace namespace, boolean ordered, DeleteRequest deleteRequest) {
+    return null;
   }
 
   @Override
@@ -304,7 +322,7 @@ public class FongoConnection implements Connection {
 
     BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(fongo.getServerAddress(), ordered, writeConcern);
 
-    int idx = 0, offset = 0;
+    int offset = 0;
     for (UpdateRequest update : updates) {
       IndexMap indexMap = IndexMap.create(offset, 1);
       final BulkWriteOperation bulkWriteOperation = collection.initializeOrderedBulkOperation();
@@ -363,7 +381,6 @@ public class FongoConnection implements Connection {
       int upsertCount = bwr.getUpserts().size();
       offset += Math.max(upsertCount, 1);
       bulkWriteBatchCombiner.addResult(bwr, indexMap);
-      idx++;
     }
     return bulkWriteBatchCombiner.getResult();
   }
@@ -567,6 +584,16 @@ public class FongoConnection implements Connection {
       LOG.warn("Command not implemented: {}", command);
       throw new FongoException("Not implemented for command : " + JSON.serialize(dbObject(command)));
     }
+  }
+
+  @Override
+  public <T> T command(String database, BsonDocument command, FieldNameValidator fieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext) {
+    return null;
+  }
+
+  @Override
+  public <T> T command(String database, BsonDocument command, FieldNameValidator commandFieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext, boolean responseExpected, SplittablePayload payload, FieldNameValidator payloadFieldNameValidator) {
+    return null;
   }
 
   private BsonInt32 getValue(BsonDocument command, String maxScan2, int value) {

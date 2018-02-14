@@ -13,9 +13,11 @@ import com.mongodb.binding.ReadBinding;
 import com.mongodb.binding.WriteBinding;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.ServerVersion;
+import com.mongodb.internal.connection.NoOpSessionContext;
 import com.mongodb.operation.OperationExecutor;
 import com.mongodb.operation.ReadOperation;
 import com.mongodb.operation.WriteOperation;
+import com.mongodb.session.SessionContext;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -188,6 +190,11 @@ public class Fongo implements OperationExecutor {
       }
 
       @Override
+      public SessionContext getSessionContext() {
+        return NoOpSessionContext.INSTANCE;
+      }
+
+      @Override
       public ReadBinding retain() {
         return this;
       }
@@ -209,6 +216,11 @@ public class Fongo implements OperationExecutor {
       @Override
       public ConnectionSource getWriteConnectionSource() {
         return new FongoConnectionSource(Fongo.this);
+      }
+
+      @Override
+      public SessionContext getSessionContext() {
+        return NoOpSessionContext.INSTANCE;
       }
 
       @Override
