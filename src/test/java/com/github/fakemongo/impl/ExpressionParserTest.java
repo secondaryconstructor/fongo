@@ -1026,6 +1026,32 @@ public class ExpressionParserTest {
     ));
   }
 
+  @Test
+  public void testNullInDbObject() {
+    DBObject query = new BasicDBObjectBuilder().push("a").add("$nin", asList("", null)).pop().get();
+    List<DBObject> results = doFilter(
+            query,
+            new BasicDBObject("a", asList(1, 4)),
+            new BasicDBObject("a", 1)
+    );
+    assertEquals(Arrays.<DBObject>asList(
+            new BasicDBObject("a", asList(1, 4)),
+            new BasicDBObject("a", 1)
+    ), results);
+  }
+
+  @Test
+  public void testNullInDbObjectWithNor() {
+    DBObject ninQuery = new BasicDBObjectBuilder(). push("a").add("$nin", asList("", null)).pop().get();
+    DBObject query =new BasicDBObjectBuilder().add("$nor", asDbList(ninQuery)).get();
+    List<DBObject> results = doFilter(
+            query,
+            new BasicDBObject("a", asList(1, 4)),
+            new BasicDBObject("a", 1)
+    );
+    assertTrue(results.isEmpty());
+  }
+
   private void assertQuery(BasicDBObject query, List<DBObject> expected) {
     List<DBObject> results = doFilter(
         query,

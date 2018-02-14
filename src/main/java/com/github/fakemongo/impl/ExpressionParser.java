@@ -718,8 +718,7 @@ public class ExpressionParser {
     } else {
       Object queryComp = typecast("query value", queryValue, Object.class);
       if (comparableFilter && !(storedValue instanceof Comparable)) {
-        // Handle null
-        if (queryComp == storedValue || queryComp.equals(storedValue)) {
+        if (queryComp == storedValue || (queryComp!= null && queryComp.equals(storedValue))) {
           return 0;
         }
         return null;
