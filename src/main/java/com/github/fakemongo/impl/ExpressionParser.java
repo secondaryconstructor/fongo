@@ -182,7 +182,8 @@ public class ExpressionParser {
                 return false;
               }
 
-              return obj1.equals(obj2);
+              Integer result = compareObjects(obj1, obj2, true);
+              return result != null && result.intValue() == 0;
             }
           };
         }
