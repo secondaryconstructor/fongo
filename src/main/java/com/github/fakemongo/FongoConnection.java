@@ -48,6 +48,7 @@ import com.mongodb.connection.ServerId;
 import com.mongodb.connection.ServerVersion;
 import com.mongodb.connection.SplittablePayload;
 import com.mongodb.internal.connection.IndexMap;
+import com.mongodb.internal.connection.NoOpSessionContext;
 import com.mongodb.internal.validator.CollectibleDocumentFieldNameValidator;
 import com.mongodb.internal.validator.UpdateFieldNameValidator;
 import com.mongodb.operation.FongoBsonArrayWrapper;
@@ -81,7 +82,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class FongoConnection implements Connection {
-  private final static Logger LOG = LoggerFactory.getLogger(FongoConnection.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FongoConnection.class);
 
   private final Fongo fongo;
   private final ConnectionDescription connectionDescription;
@@ -109,20 +110,83 @@ public class FongoConnection implements Connection {
 
   @Override
   public WriteConcernResult insert(MongoNamespace namespace, boolean ordered, InsertRequest insertRequest) {
-    return null;
+    LOG.debug("insert() namespace:{} insert:{}", namespace, insertRequest);
+    final DBCollection collection = dbCollection(namespace);
+    final WriteConcern writeConcern = collection.getWriteConcern();
+
+    final DBObject parse = dbObject(insertRequest.getDocument());
+    collection.insert(parse, writeConcern);
+    LOG.debug("insert() namespace:{} insert:{}, parse:{}", namespace, insertRequest.getDocument(), parse.getClass());
+    if (writeConcern.isAcknowledged()) {
+      return WriteConcernResult.acknowledged(1, false, null);
+    } else {
+      return WriteConcernResult.unacknowledged();
+    }
   }
 
   @Override
-  public WriteConcernResult update(MongoNamespace namespace, boolean ordered, UpdateRequest updateRequest) {
-    return null;
+  public WriteConcernResult update(MongoNamespace namespace, boolean ordered, UpdateRequest update) {
+    LOG.debug("update() namespace:{} update:{}", namespace, update);
+    final DBCollection collection = dbCollection(namespace);
+    WriteConcern writeConcern = collection.getWriteConcern();
+
+    boolean isUpdateOfExisting = false;
+    BsonValue upsertedId = null;
+    int count = 0;
+
+    FieldNameValidator validator;
+    if (update.getType() == REPLACE) {
+      validator = new CollectibleDocumentFieldNameValidator();
+    } else {
+      validator = new UpdateFieldNameValidator();
+    }
+    for (String updateName : update.getUpdate().keySet()) {
+      if (!validator.validate(updateName)) {
+        throw new IllegalArgumentException("Invalid BSON field name " + updateName);
+      }
+    }
+    final WriteResult writeResult = collection.update(dbObject(update.getFilter()), dbObject(update.getUpdate()), update.isUpsert(), update.isMulti());
+    if (writeResult.isUpdateOfExisting()) {
+      isUpdateOfExisting = true;
+      count += writeResult.getN();
+    } else {
+      if (update.isUpsert()) {
+        BsonValue updateId = update.getUpdate().get(DBCollection.ID_FIELD_NAME, null);
+
+        if (updateId != null) {
+          upsertedId = updateId;
+        } else {
+          BsonDocument bsonDoc = bsonDocument(new BasicDBObject(DBCollection.ID_FIELD_NAME, writeResult.getUpsertedId()));
+          upsertedId = bsonDoc.get(DBCollection.ID_FIELD_NAME);
+        }
+        count++;
+      } else {
+        count += writeResult.getN();
+      }
+    }
+    if (writeConcern.isAcknowledged()) {
+      return WriteConcernResult.acknowledged(count, isUpdateOfExisting, upsertedId);
+    } else {
+      return WriteConcernResult.unacknowledged();
+    }
   }
 
   @Override
   public WriteConcernResult delete(MongoNamespace namespace, boolean ordered, DeleteRequest deleteRequest) {
-    return null;
+    LOG.debug("delete() namespace:{} deletes:{}", namespace, deleteRequest);
+    final DBCollection collection = dbCollection(namespace);
+    final WriteConcern writeConcern = collection.getWriteConcern();
+    final ArrayList<DeleteRequest> deleteRequests = new ArrayList<DeleteRequest>();
+    deleteRequests.add(deleteRequest);
+    int count = delete(collection, writeConcern, deleteRequests);
+    if (writeConcern.isAcknowledged()) {
+      return WriteConcernResult.acknowledged(count, count != 0, null);
+    } else {
+      return WriteConcernResult.unacknowledged();
+    }
   }
 
-  @Override
+  // TODO REMOVE (3.6)
   public WriteConcernResult insert(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<InsertRequest> inserts) {
     LOG.debug("insert() namespace:{} inserts:{}", namespace, inserts);
     final DBCollection collection = dbCollection(namespace);
@@ -138,7 +202,7 @@ public class FongoConnection implements Connection {
     }
   }
 
-  @Override
+  // TODO REMOVE (3.6)
   public WriteConcernResult update(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<UpdateRequest> updates) {
     LOG.debug("update() namespace:{} updates:{}", namespace, updates);
     final DBCollection collection = dbCollection(namespace);
@@ -186,7 +250,7 @@ public class FongoConnection implements Connection {
     }
   }
 
-  @Override
+  // TODO REMOVE (3.6)
   public WriteConcernResult delete(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<DeleteRequest> deletes) {
     LOG.debug("delete() namespace:{} deletes:{}", namespace, deletes);
     final DBCollection collection = dbCollection(namespace);
@@ -198,7 +262,6 @@ public class FongoConnection implements Connection {
     }
   }
 
-  @Override
   public BulkWriteResult insertCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<InsertRequest> inserts) {
     return this.insertCommand(namespace, ordered, writeConcern, false, inserts);
   }
@@ -214,7 +277,6 @@ public class FongoConnection implements Connection {
    * @return the bulk write result
    * @since 3.2
    */
-  @Override
   public BulkWriteResult insertCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, Boolean bypassDocumentValidation, List<InsertRequest> inserts) {
     LOG.debug("insertCommand() namespace:{} inserts:{}", namespace, inserts);
     final DBCollection collection = dbCollection(namespace);
@@ -227,7 +289,6 @@ public class FongoConnection implements Connection {
       for (InsertRequest insert : inserts) {
         if (!Boolean.TRUE.equals(bypassDocumentValidation)) {
           FieldNameValidator validator = new CollectibleDocumentFieldNameValidator();
-          
           for (String updateName : insert.getDocument().keySet()) {
             if (!validator.validate(updateName)) {
               throw new IllegalArgumentException("Invalid BSON field name " + updateName);
@@ -310,7 +371,6 @@ public class FongoConnection implements Connection {
    * @return the bulk write result
    * @since 3.2
    */
-  @Override
   public BulkWriteResult updateCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<UpdateRequest> updates) {
     return this.updateCommand(namespace, ordered, writeConcern, false, updates);
   }
@@ -326,7 +386,6 @@ public class FongoConnection implements Connection {
    * @return the bulk write result
    * @since 3.2
    */
-  @Override
   public BulkWriteResult updateCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, Boolean bypassDocumentValidation, List<UpdateRequest> updates) {
     LOG.debug("updateCommand() namespace:{} updates:{}", namespace, updates);
     final FongoDBCollection collection = dbCollection(namespace);
@@ -396,7 +455,6 @@ public class FongoConnection implements Connection {
     return bulkWriteBatchCombiner.getResult();
   }
 
-  @Override
   public BulkWriteResult deleteCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<DeleteRequest> deletes) {
     LOG.debug("deleteCommand() namespace:{} deletes:{}", namespace, deletes);
     final DBCollection collection = dbCollection(namespace);
@@ -425,8 +483,24 @@ public class FongoConnection implements Connection {
     return count;
   }
 
+
   @Override
-  public <T> T command(String database, BsonDocument command, boolean slaveOk, FieldNameValidator fieldNameValidator, Decoder<T> commandResultDecoder) {
+  public <T> T command(final String database, final BsonDocument command, final boolean slaveOk,
+                       final FieldNameValidator fieldNameValidator,
+                       final Decoder<T> commandResultDecoder) {
+    return command(database, command, fieldNameValidator, ReadPreference.primary(), commandResultDecoder,
+        NoOpSessionContext.INSTANCE);
+  }
+
+  @Override
+  public <T> T command(final String database, final BsonDocument command, final FieldNameValidator fieldNameValidator,
+                       final ReadPreference readPreference, final Decoder<T> commandResultDecoder, final SessionContext sessionContext) {
+    return command(database, command, fieldNameValidator, readPreference, commandResultDecoder, sessionContext, true, null, null);
+  }
+
+
+  @Override
+  public <T> T command(String database, BsonDocument command, FieldNameValidator commandFieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext, boolean responseExpected, SplittablePayload payload, FieldNameValidator payloadFieldNameValidator) {
     final DB db = fongo.getDB(database);
     LOG.debug("command() database:{}, command:{}", database, command);
     if (command.containsKey("create")) {
@@ -451,7 +525,7 @@ public class FongoConnection implements Connection {
       final boolean remove = BsonBoolean.TRUE.equals(command.getBoolean("remove", BsonBoolean.FALSE));
 
       if (update != null) {
-        final FieldNameValidator validatorUpdate = fieldNameValidator.getValidatorForField("update");
+        final FieldNameValidator validatorUpdate = commandFieldNameValidator.getValidatorForField("update");
         for (String updateName : update.keySet()) {
           if (!validatorUpdate.validate(updateName)) {
             throw new IllegalArgumentException("Invalid BSON field name " + updateName);
@@ -635,16 +709,6 @@ public class FongoConnection implements Connection {
       LOG.warn("Command not implemented: {}", command);
       throw new FongoException("Not implemented for command : " + JSON.serialize(dbObject(command)));
     }
-  }
-
-  @Override
-  public <T> T command(String database, BsonDocument command, FieldNameValidator fieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext) {
-    return null;
-  }
-
-  @Override
-  public <T> T command(String database, BsonDocument command, FieldNameValidator commandFieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext, boolean responseExpected, SplittablePayload payload, FieldNameValidator payloadFieldNameValidator) {
-    return null;
   }
 
   private BsonInt32 getValue(BsonDocument command, String maxScan2, int value) {
