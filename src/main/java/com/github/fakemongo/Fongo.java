@@ -17,6 +17,7 @@ import com.mongodb.internal.connection.NoOpSessionContext;
 import com.mongodb.operation.OperationExecutor;
 import com.mongodb.operation.ReadOperation;
 import com.mongodb.operation.WriteOperation;
+import com.mongodb.session.ClientSession;
 import com.mongodb.session.SessionContext;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -46,8 +47,8 @@ import org.slf4j.LoggerFactory;
  * @author jon
  * @author twillouer
  */
-public class Fongo implements OperationExecutor {
-  private final static Logger LOG = LoggerFactory.getLogger(Fongo.class);
+public class Fongo implements /* TODO REMOVE 3.6 */ OperationExecutor {
+  private static final Logger LOG = LoggerFactory.getLogger(Fongo.class);
 
   public static final ServerVersion V3_2_SERVER_VERSION = new ServerVersion(3, 2);
   public static final ServerVersion V3_3_SERVER_VERSION = new ServerVersion(3, 3);
