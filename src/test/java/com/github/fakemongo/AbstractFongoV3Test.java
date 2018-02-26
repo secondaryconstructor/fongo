@@ -750,7 +750,7 @@ public abstract class AbstractFongoV3Test {
 //    if (serverVersion().equals(Fongo.OLD_SERVER_VERSION)) {
 //      exception.expect(DuplicateKeyException.class);
 //    } else {
-    exception.expect(MongoBulkWriteException.class);
+    exception.expect(DuplicateKeyException.class);
 //    }
     // When
     final BulkWriteResult bulkWriteResult = collection.bulkWrite(
@@ -983,6 +983,8 @@ public abstract class AbstractFongoV3Test {
     // When
     final UpdateResult updateResult = col.replaceOne(eq("_id", 1), new Document("key", "value2"), new UpdateOptions().upsert(true));
 
+    // 3.6: AcknowledgedUpdateResult{matchedCount=0, modifiedCount=0, upsertedId=BsonInt32{value=1}}
+    
     // When
     assertThat(toList(col.find())).containsOnly(new Document("_id", 1).append("key", "value2"));
     assertThat(updateResult.getMatchedCount()).isEqualTo(0L);

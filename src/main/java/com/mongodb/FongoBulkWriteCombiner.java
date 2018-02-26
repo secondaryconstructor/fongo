@@ -1,11 +1,13 @@
 package com.mongodb;
 
 import java.util.ArrayList;
+import static java.util.Collections.unmodifiableList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 public class FongoBulkWriteCombiner {
 
@@ -45,18 +47,39 @@ public class FongoBulkWriteCombiner {
     } else {
       if (wr.getUpsertedId() != null) {
         upserts.add(new BulkWriteUpsert(idx, wr.getUpsertedId()));
-//            insertedCount++;
       }
     }
   }
+
+  // TODO
+  public void addUpdateResult(int idx, WriteConcernResult wr) {
+    if (wr.isUpdateOfExisting()) {
+      matchedCount += wr.getCount();
+      modifiedCount += wr.getCount();
+    } else {
+      if (wr.getUpsertedId() != null) {
+        upserts.add(new BulkWriteUpsert(idx, wr.getUpsertedId()));
+      }
+    }
+  }
+
 
   public void addRemoveResult(WriteResult wr) {
     matchedCount += wr.getN();
     removedCount += wr.getN();
   }
 
+  public void addRemoveResult(WriteConcernResult wr) {
+    matchedCount += 0; //wr.getCount();
+    removedCount += wr.getCount();
+  }
+
   public void addInsertResult(WriteResult wr) {
     insertedCount += wr.getN();
+  }
+
+  public void addInsertResult(WriteConcernResult wr) {
+    insertedCount += wr.getCount();
   }
 
   public void addInsertError(int idx, WriteConcernException exception) {
@@ -78,6 +101,18 @@ public class FongoBulkWriteCombiner {
       }
       BulkWriteResult bulkWriteResult = getBulkWriteResult(writeConcern);
       throw new BulkWriteException(bulkWriteResult, bwErrors, null, address);
+    }
+  }
+
+  public com.mongodb.bulk.BulkWriteResult toBulkWriteResult() {
+    if (this.writeConcern.isAcknowledged()) {
+      final ArrayList<com.mongodb.bulk.BulkWriteUpsert> bulkWriteUpserts = new ArrayList<com.mongodb.bulk.BulkWriteUpsert>();
+      for (BulkWriteUpsert upsert : this.upserts) {
+        bulkWriteUpserts.add(new com.mongodb.bulk.BulkWriteUpsert(upsert.getIndex(), (BsonValue) upsert.getId()));
+      }
+      return com.mongodb.bulk.BulkWriteResult.acknowledged(insertedCount, matchedCount, removedCount, modifiedCount, bulkWriteUpserts);
+    } else {
+      return com.mongodb.bulk.BulkWriteResult.unacknowledged();
     }
   }
 

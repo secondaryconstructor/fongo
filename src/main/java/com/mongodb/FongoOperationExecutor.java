@@ -14,7 +14,7 @@ import com.mongodb.session.ClientSession;
 public class FongoOperationExecutor implements OperationExecutor {
   private final Fongo fongo;
 
-  public FongoOperationExecutor(Fongo fongo) {
+  FongoOperationExecutor(Fongo fongo) {
     this.fongo = fongo;
   }
 
@@ -30,11 +30,11 @@ public class FongoOperationExecutor implements OperationExecutor {
 
   @Override
   public <T> T execute(ReadOperation<T> operation, ReadPreference readPreference, ClientSession session) {
-    return fongo.execute(operation, readPreference);
+    return fongo.execute(operation, readPreference, session);
   }
 
   @Override
   public <T> T execute(WriteOperation<T> operation, ClientSession session) {
-    return fongo.execute(operation);
+    return fongo.execute(operation, session);
   }
 }
