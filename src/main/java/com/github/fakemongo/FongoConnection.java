@@ -202,6 +202,7 @@ public class FongoConnection implements Connection {
   }
 
   // TODO REMOVE (3.6)
+  @Deprecated
   public WriteConcernResult update(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<UpdateRequest> updates) {
     LOG.debug("update() namespace:{} updates:{}", namespace, updates);
     final DBCollection collection = dbCollection(namespace);
@@ -250,6 +251,7 @@ public class FongoConnection implements Connection {
   }
 
   // TODO REMOVE (3.6)
+  @Deprecated
   public WriteConcernResult delete(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, List<DeleteRequest> deletes) {
     LOG.debug("delete() namespace:{} deletes:{}", namespace, deletes);
     final DBCollection collection = dbCollection(namespace);
@@ -652,6 +654,57 @@ public class FongoConnection implements Connection {
         documents.add(new BsonDocument("name", new BsonString(databaseName)));
       }
       return (T) new BsonDocument("databases", FongoBsonArrayWrapper.bsonArrayWrapper(documents));
+    } else if (command.containsKey("update")) {
+      // 3.6 Only
+//      final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("update").asString().getValue());
+//      for (BsonDocument bsonDocument : payload.getPayload()) {
+//        final BsonBoolean ordered = (BsonBoolean) command.get("ordered");
+//        DBObject query = null;
+//        DBObject update = null;
+//        DBObject fields = null;
+//        DBObject sort = null;
+//        boolean returnNew = false;
+////      = BsonBoolean.TRUE.equals(command.getBoolean("new", BsonBoolean.FALSE));
+//        boolean upsert = false;
+//        boolean remove = false; // = BsonBoolean.TRUE.equals(command.getBoolean("remove", BsonBoolean.FALSE));
+//        for (Map.Entry<String, BsonValue> entry : bsonDocument.entrySet()) {
+//          String key = entry.getKey();
+//          if ("q".equals(key)) {
+//            query = dbObject((BsonDocument) entry.getValue());
+//          } else if ("u".equals(key)) {
+//            update = dbObject((BsonDocument) entry.getValue());
+//          } else if ("upsert".equals(key)) {
+//            upsert = BsonBoolean.TRUE.equals(bsonDocument.getBoolean("upsert", BsonBoolean.FALSE));
+//          } else {
+//            LOG.warn("Update: entry not implemented {}, entry:{}", command, entry);
+//            throw new FongoException("Not implemented for command update : " + JSON.serialize(dbObject(command)));
+//          }
+//        }
+//        if (update != null) {
+//          final FieldNameValidator validatorUpdate = commandFieldNameValidator.getValidatorForField("update");
+//          for (String updateName : update.keySet()) {
+//            if (!validatorUpdate.validate(updateName)) {
+//              throw new IllegalArgumentException("Invalid BSON field name " + updateName);
+//            }
+//          }
+//        }
+//        System.out.println(payload.getPayload());
+//        payload.setPosition(payload.getPosition() + 1);
+//
+//        final DBObject andModify = dbCollection.findAndModify(query, fields, sort, remove, update, returnNew, upsert);
+//        // upserted
+//        // nModified
+//        // see com.mongodb.operation.BulkWriteBatch.getModifiedCount
+//
+//        final BsonDocument result = new BsonDocument("n", new BsonInt32(andModify == null ? 0 : 1));
+////        result.put("upserted", null);
+////        result.put("nModified", null);
+//        return (T) result;
+//      }
+////      return reencode(commandResultDecoder, "value", andModify);
+//      return (T) new BsonDocument("n", new BsonInt32(1));
+      // TODO
+      throw new FongoException("Not implemented for command : " + JSON.serialize(dbObject(command)));
     } else {
       LOG.warn("Command not implemented: {}", command);
       throw new FongoException("Not implemented for command : " + JSON.serialize(dbObject(command)));
