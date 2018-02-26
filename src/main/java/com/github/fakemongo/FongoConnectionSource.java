@@ -17,7 +17,7 @@ class FongoConnectionSource implements ConnectionSource {
 
   private final Fongo fongo;
 
-  public FongoConnectionSource(Fongo fongo) {
+  FongoConnectionSource(Fongo fongo) {
     this.fongo = fongo;
   }
 

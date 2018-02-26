@@ -4,6 +4,8 @@ import com.github.fakemongo.Fongo;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.IndexModel;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.result.UpdateResult;
 import com.mongodb.util.FongoJSON;
 import java.util.ArrayList;
 import java.util.List;
