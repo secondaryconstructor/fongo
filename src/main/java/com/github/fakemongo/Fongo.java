@@ -3,7 +3,6 @@ package com.github.fakemongo;
 import com.mongodb.DB;
 import com.mongodb.FongoBulkWriteCombiner;
 import com.mongodb.FongoDB;
-import com.mongodb.FongoDBCollection;
 import com.mongodb.MockMongoClient;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadConcern;
@@ -22,9 +21,12 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.ServerVersion;
 import com.mongodb.internal.connection.NoOpSessionContext;
 import com.mongodb.internal.session.ClientSessionContext;
+import com.mongodb.operation.DeleteOperation;
+import com.mongodb.operation.InsertOperation;
 import com.mongodb.operation.MixedBulkWriteOperation;
 import com.mongodb.operation.OperationExecutor;
 import com.mongodb.operation.ReadOperation;
+import com.mongodb.operation.UpdateOperation;
 import com.mongodb.operation.WriteOperation;
 import com.mongodb.session.ClientSession;
 import com.mongodb.session.SessionContext;
@@ -64,7 +66,7 @@ public class Fongo implements /* TODO REMOVE 3.6 */ OperationExecutor {
   public static final ServerVersion V3_6_SERVER_VERSION = new ServerVersion(3, 6);
   public static final ServerVersion V3_SERVER_VERSION = new ServerVersion(3, 0);
   public static final ServerVersion OLD_SERVER_VERSION = new ServerVersion(0, 0);
-  public static final ServerVersion DEFAULT_SERVER_VERSION = V3_2_SERVER_VERSION;
+  public static final ServerVersion DEFAULT_SERVER_VERSION = V3_6_SERVER_VERSION;
 
   private final Map<String, FongoDB> dbMap = new ConcurrentHashMap<String, FongoDB>();
   private final ServerAddress serverAddress;
@@ -226,7 +228,6 @@ public class Fongo implements /* TODO REMOVE 3.6 */ OperationExecutor {
     if (operation instanceof MixedBulkWriteOperation) {
       MixedBulkWriteOperation mixedBulkWriteOperation = (MixedBulkWriteOperation) operation;
       FongoBulkWriteCombiner fongoBulkWriteCombiner = new FongoBulkWriteCombiner(mixedBulkWriteOperation.getWriteConcern());
-      final FongoDBCollection collection = this.getDB(mixedBulkWriteOperation.getNamespace().getDatabaseName()).getCollection(mixedBulkWriteOperation.getNamespace().getCollectionName());
       int i = 0;
       for (WriteRequest writeRequest : mixedBulkWriteOperation.getWriteRequests()) {
         if (writeRequest instanceof InsertRequest) {
@@ -236,14 +237,47 @@ public class Fongo implements /* TODO REMOVE 3.6 */ OperationExecutor {
         } else if (writeRequest instanceof UpdateRequest) {
           UpdateRequest updateRequest = (UpdateRequest) writeRequest;
           final WriteConcernResult update = new FongoConnection(this).update(mixedBulkWriteOperation.getNamespace(), mixedBulkWriteOperation.isOrdered(), updateRequest);
-          fongoBulkWriteCombiner.addUpdateResult(i++, update);
+          fongoBulkWriteCombiner.addUpdateResult(i, update);
         } else if (writeRequest instanceof DeleteRequest) {
           DeleteRequest deleteRequest = (DeleteRequest) writeRequest;
           final WriteConcernResult update = new FongoConnection(this).delete(mixedBulkWriteOperation.getNamespace(), mixedBulkWriteOperation.isOrdered(), deleteRequest);
           fongoBulkWriteCombiner.addRemoveResult(update);
+        } else {
+          throw new FongoException("Fongo doesn't implement " + writeRequest.getClass());
         }
+        i++;
       }
       return (T) fongoBulkWriteCombiner.toBulkWriteResult();
+    } else if (operation instanceof UpdateOperation) {
+      final UpdateOperation updateOperation = (UpdateOperation) operation;
+      final FongoBulkWriteCombiner fongoBulkWriteCombiner = new FongoBulkWriteCombiner(updateOperation.getWriteConcern());
+      int i = 0;
+      for (UpdateRequest updateRequest : updateOperation.getUpdateRequests()) {
+        final WriteConcernResult update = new FongoConnection(this).update(updateOperation.getNamespace(), updateOperation.isOrdered(), updateRequest);
+        fongoBulkWriteCombiner.addUpdateResult(i, update);
+        i++;
+      }
+      return (T) fongoBulkWriteCombiner.toWriteConcernResult();
+    } else if (operation instanceof InsertOperation) {
+      final InsertOperation insertOperation = (InsertOperation) operation;
+      final FongoBulkWriteCombiner fongoBulkWriteCombiner = new FongoBulkWriteCombiner(insertOperation.getWriteConcern());
+      int i = 0;
+      for (InsertRequest insertRequest : insertOperation.getInsertRequests()) {
+        final WriteConcernResult update = new FongoConnection(this).insert(insertOperation.getNamespace(), insertOperation.isOrdered(), insertRequest);
+        fongoBulkWriteCombiner.addInsertResult(update);
+        i++;
+      }
+      return (T) fongoBulkWriteCombiner.toWriteConcernResult();
+    } else if (operation instanceof DeleteOperation) {
+      final DeleteOperation deleteOperation = (DeleteOperation) operation;
+      final FongoBulkWriteCombiner fongoBulkWriteCombiner = new FongoBulkWriteCombiner(deleteOperation.getWriteConcern());
+      int i = 0;
+      for (DeleteRequest deleteRequest : deleteOperation.getDeleteRequests()) {
+        final WriteConcernResult update = new FongoConnection(this).delete(deleteOperation.getNamespace(), deleteOperation.isOrdered(), deleteRequest);
+        fongoBulkWriteCombiner.addRemoveResult(update);
+        i++;
+      }
+      return (T) fongoBulkWriteCombiner.toWriteConcernResult();
     }
 
     return operation.execute(new WriteBinding() {
