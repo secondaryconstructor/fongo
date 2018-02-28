@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 public class FongoAsync implements AsyncOperationExecutor {
   private static final Logger LOG = LoggerFactory.getLogger(FongoAsync.class);
 
-  public static final ServerVersion DEFAULT_SERVER_VERSION = new ServerVersion(3, 0);
+  public static final ServerVersion DEFAULT_SERVER_VERSION = new ServerVersion(3, 6);
 
   private final Fongo fongo;
   private final Map<String, FongoAsyncMongoDatabase> dbMap = new ConcurrentHashMap<String, FongoAsyncMongoDatabase>();
@@ -160,38 +160,8 @@ public class FongoAsync implements AsyncOperationExecutor {
    */
   @Override
   public <T> void execute(final AsyncReadOperation<T> operation, final ReadPreference readPreference, SingleResultCallback<T> callback) {
-    operation.executeAsync(new AsyncReadBinding() {
-      @Override
-      public ReadPreference getReadPreference() {
-        return readPreference;
-      }
+    execute(operation, readPreference, null, callback);
 
-      @Override
-      public SessionContext getSessionContext() {
-        return NoOpSessionContext.INSTANCE;
-      }
-
-      @Override
-      public void getReadConnectionSource(SingleResultCallback<AsyncConnectionSource> callback) {
-        LOG.info("getReadConnectionSource() operation:" + operation.getClass());
-        callback.onResult(new FongoAsyncConnectionSource(FongoAsync.this), null);
-      }
-
-      @Override
-      public AsyncReadBinding retain() {
-        return this;
-      }
-
-      @Override
-      public int getCount() {
-        return 0;
-      }
-
-      @Override
-      public void release() {
-
-      }
-    }, callback);
   }
 
   @Override
@@ -238,33 +208,7 @@ public class FongoAsync implements AsyncOperationExecutor {
    */
   @Override
   public <T> void execute(final AsyncWriteOperation<T> operation, SingleResultCallback<T> callback) {
-    operation.executeAsync(new AsyncWriteBinding() {
-      @Override
-      public void getWriteConnectionSource(final SingleResultCallback<AsyncConnectionSource> callback) {
-        LOG.info("getWriteConnectionSource() operation:" + operation.getClass());
-        callback.onResult(new FongoAsyncConnectionSource(FongoAsync.this), null);
-      }
-
-      @Override
-      public SessionContext getSessionContext() {
-        return NoOpSessionContext.INSTANCE;
-      }
-
-      @Override
-      public AsyncWriteBinding retain() {
-        return this;
-      }
-
-      @Override
-      public int getCount() {
-        return 0;
-      }
-
-      @Override
-      public void release() {
-
-      }
-    }, callback);
+    execute(operation, null, callback);
   }
 
   @Override

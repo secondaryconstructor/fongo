@@ -116,6 +116,14 @@ public class FongoBulkWriteCombiner {
     }
   }
 
+  public com.mongodb.WriteConcernResult toWriteConcernResult() {
+    if (this.writeConcern.isAcknowledged()) {
+      return WriteConcernResult.acknowledged(insertedCount, matchedCount > 0, upserts.isEmpty() ? null : (BsonValue) upserts.iterator().next().getId());
+    } else {
+      return WriteConcernResult.unacknowledged();
+    }
+  }
+
   public static class WriteError {
 
     private final int index;

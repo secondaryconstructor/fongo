@@ -737,8 +737,6 @@ public abstract class AbstractFongoV3Test {
             docId(3),
             docId(4).append("x", 4)
     );
-
-
   }
   
   @Test
