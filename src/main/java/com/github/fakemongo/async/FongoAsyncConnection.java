@@ -177,13 +177,25 @@ class FongoAsyncConnection implements AsyncConnection {
   }
 
   @Override
-  public <T> void commandAsync(String database, BsonDocument command, FieldNameValidator fieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext, SingleResultCallback<T> callback) {
-
+  public <T> void commandAsync(final String database, final BsonDocument command, final FieldNameValidator fieldNameValidator, final ReadPreference readPreference, final Decoder<T> commandResultDecoder, final SessionContext sessionContext, SingleResultCallback<T> callback) {
+    LOG.info("commandAsync() command:{}", command);
+    asyncResult(new Callable<T>() {
+      @Override
+      public T call() {
+        return fongoConnection.command(database, command, readPreference.isSlaveOk(), fieldNameValidator, commandResultDecoder);
+      }
+    }, callback);
   }
 
   @Override
-  public <T> void commandAsync(String database, BsonDocument command, FieldNameValidator commandFieldNameValidator, ReadPreference readPreference, Decoder<T> commandResultDecoder, SessionContext sessionContext, boolean responseExpected, SplittablePayload payload, FieldNameValidator payloadFieldNameValidator, SingleResultCallback<T> callback) {
-
+  public <T> void commandAsync(final String database, final BsonDocument command, final FieldNameValidator commandFieldNameValidator, final ReadPreference readPreference, final Decoder<T> commandResultDecoder, final SessionContext sessionContext, boolean responseExpected, SplittablePayload payload, FieldNameValidator payloadFieldNameValidator, SingleResultCallback<T> callback) {
+    LOG.info("commandAsync() command:{}", command);
+    asyncResult(new Callable<T>() {
+      @Override
+      public T call() {
+        return fongoConnection.command(database, command, readPreference.isSlaveOk(), commandFieldNameValidator, commandResultDecoder);
+      }
+    }, callback);
   }
 
   @Override
