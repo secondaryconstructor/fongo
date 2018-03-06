@@ -476,6 +476,7 @@ public class FongoConnection implements Connection {
 
 
   @Override
+  @Deprecated
   public <T> T command(final String database, final BsonDocument command, final boolean slaveOk,
                        final FieldNameValidator fieldNameValidator,
                        final Decoder<T> commandResultDecoder) {
@@ -587,11 +588,25 @@ public class FongoConnection implements Connection {
       return (T) new Document("ok", 1.0);
     } else if (command.containsKey("insert")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("insert").asString().getValue());
-      List<BsonValue> documentsToInsert = command.getArray("documents").getValues();
-      for (BsonValue document : documentsToInsert) {
-        dbCollection.insert(dbObject(document.asDocument()));
+      if (payload != null) {
+        SplittablePayload sp = payload;
+        int inserted = 0;
+        do {
+          for (BsonDocument bsonDocument : payload.getPayload()) {
+            dbCollection.insert(dbObject(bsonDocument.asDocument()));
+          }
+
+        } while (sp.hasAnotherSplit() && (sp = sp.getNextSplit()) != null);
+        return (T) new Document("ok", 1).append("n", inserted);
+      } else if (command.containsKey("documents")) {
+        List<BsonValue> documentsToInsert = command.getArray("documents").getValues();
+        for (BsonValue document : documentsToInsert) {
+          dbCollection.insert(dbObject(document.asDocument()));
+        }
+        return (T) new Document("ok", 1).append("n", documentsToInsert.size());
+      } else {
+        throw new FongoException("Not supported command.");
       }
-      return (T) new Document("ok", 1).append("n", documentsToInsert.size());
     } else if (command.containsKey("delete")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("delete").asString().getValue());
       List<BsonValue> documentsToDelete = command.getArray("deletes").getValues();
