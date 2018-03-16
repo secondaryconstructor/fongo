@@ -199,6 +199,7 @@ public class FongoConnection implements Connection {
   public BulkWriteResult insertCommand(MongoNamespace namespace, boolean ordered, WriteConcern writeConcern, Boolean bypassDocumentValidation, List<InsertRequest> inserts) {
     LOG.debug("insertCommand() namespace:{} inserts:{}", namespace, inserts);
     final DBCollection collection = dbCollection(namespace);
+    validateCollectionName(collection.getName());
     BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(fongo.getServerAddress(), ordered, writeConcern);
     IndexMap indexMap = IndexMap.create();
     final BulkWriteOperation bulkWriteOperation = ordered ? collection.initializeOrderedBulkOperation() : collection.initializeUnorderedBulkOperation();
@@ -207,10 +208,6 @@ public class FongoConnection implements Connection {
       for (InsertRequest insert : inserts) {
         if (!Boolean.TRUE.equals(bypassDocumentValidation)) {
           FieldNameValidator validator = new CollectibleDocumentFieldNameValidator();
-          
-          String collectionName = collection.getName();
-          if (!validator.validate(collectionName)) 
-              throw new IllegalArgumentException("Invalid collection name " + collectionName);
           
           for (String updateName : insert.getDocument().keySet()) {
             if (!validator.validate(updateName)) {
@@ -238,6 +235,12 @@ public class FongoConnection implements Connection {
       }
     }
     return bulkWriteBatchCombiner.getResult();
+  }
+
+  private void validateCollectionName(String collectionName) {
+    if (collectionName == null || collectionName.isEmpty() || collectionName.startsWith("system.")
+            || collectionName.contains("$") || collectionName.contains("\0"))
+      throw new IllegalArgumentException("Invalid collection name " + collectionName);
   }
 
   private static final List<String> IGNORED_KEYS = asList("ok", "err", "code");
