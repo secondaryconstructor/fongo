@@ -589,15 +589,16 @@ public class FongoConnection implements Connection {
     } else if (command.containsKey("insert")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("insert").asString().getValue());
       if (payload != null) {
-        SplittablePayload sp = payload;
         int inserted = 0;
-        do {
-          for (BsonDocument bsonDocument : payload.getPayload()) {
-            dbCollection.insert(dbObject(bsonDocument.asDocument()));
-          }
 
-        } while (sp.hasAnotherSplit() && (sp = sp.getNextSplit()) != null);
-        return (T) new Document("ok", 1).append("n", inserted);
+        if (payload.hasAnotherSplit()) {
+          BsonDocument bsonDocument = payload.getPayload().get(payload.getPosition());
+          payload.setPosition(payload.getPosition() + 1);
+
+          inserted = dbCollection.insert(dbObject(bsonDocument.asDocument())).getN();
+        }
+
+        return (T) new BsonDocument("ok", new BsonInt32(1)).append("n", new BsonInt32(inserted));
       } else if (command.containsKey("documents")) {
         List<BsonValue> documentsToInsert = command.getArray("documents").getValues();
         for (BsonValue document : documentsToInsert) {
