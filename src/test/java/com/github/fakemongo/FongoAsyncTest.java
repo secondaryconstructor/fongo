@@ -54,13 +54,19 @@ public class FongoAsyncTest {
   public void insertOne_and_count_works() throws Throwable {
     // Given
     final MongoCollection<Document> collection = newCollection();
-    collection.insertOne(new Document("i", 1), null);
-    collection.insertOne(new Document("i", 1), null);
+
+    AwaitResultSingleResultCallback<Void> result1 = new AwaitResultSingleResultCallback<Void>();
+    collection.insertOne(new Document("i", 1), result1);
+    result1.awaitResult();
+
+    AwaitResultSingleResultCallback<Void> result2 = new AwaitResultSingleResultCallback<Void>();
+    collection.insertOne(new Document("i", 1), result2);
+    result2.awaitResult();
 
     // When/Then
-    AwaitResultSingleResultCallback<Long> result = new AwaitResultSingleResultCallback<Long>();
-    collection.count(result);
-    assertThat(result.awaitResult()).isEqualTo(2L);
+    AwaitResultSingleResultCallback<Long> result3 = new AwaitResultSingleResultCallback<Long>();
+    collection.count(result3);
+    assertThat(result3.awaitResult()).isEqualTo(2L);
   }
 
   @Test
