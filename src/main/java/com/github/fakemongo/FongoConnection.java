@@ -621,7 +621,21 @@ public class FongoConnection implements Connection {
       }
     } else if (command.containsKey("delete")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("delete").asString().getValue());
-      List<BsonValue> documentsToDelete = command.getArray("deletes").getValues();
+      List<BsonValue> documentsToDelete;
+
+      if (payload != null) {
+        if (payload.hasAnotherSplit()) {
+          documentsToDelete = Collections.singletonList(payload.getPayload().get(payload.getPosition()));
+          payload.setPosition(payload.getPosition() + 1);
+        }
+        else {
+          documentsToDelete = Collections.emptyList();
+        }
+      }
+      else {
+        documentsToDelete = command.getArray("deletes").getValues();
+      }
+
       for (BsonValue document : documentsToDelete) {
         if (!document.asDocument().containsKey("limit")) {
           throw new MongoCommandException(new BsonDocument("ok", BsonBoolean.FALSE).append("code", new BsonInt32(9)), this.fongo.getServerAddress());
@@ -652,7 +666,13 @@ public class FongoConnection implements Connection {
           numDocsDeleted += result.getN();
         }
       }
-      return (T) new Document("ok", 1).append("n", numDocsDeleted);
+
+      if (payload != null) {
+        return (T) new BsonDocument("ok", new BsonInt32(1)).append("n", new BsonInt32(numDocsDeleted));
+      }
+      else {
+        return (T) new Document("ok", 1).append("n", numDocsDeleted);
+      }
     } else if (command.containsKey("find")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("find").asString().getValue());
       BsonInt32 limit = getValue(command, "limit", -1);
