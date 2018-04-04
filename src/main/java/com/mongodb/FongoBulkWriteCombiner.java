@@ -2,10 +2,10 @@ package com.mongodb;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import org.bson.BsonDocument;
-import static java.util.Collections.*;
 
 public class FongoBulkWriteCombiner {
 
@@ -70,10 +70,14 @@ public class FongoBulkWriteCombiner {
     return new AcknowledgedBulkWriteResult(insertedCount, matchedCount, removedCount, modifiedCount, new ArrayList<BulkWriteUpsert>(upserts));
   }
 
-  public void throwOnError() {
+  public void throwOnError(ServerAddress address) {
     if (!errors.isEmpty()) {
+      List<BulkWriteError> bwErrors = new ArrayList<BulkWriteError>();
+      for (WriteError e: errors) {
+        bwErrors.add(new BulkWriteError(e.code, e.message, FongoDBCollection.dbObject(e.details), e.index));
+      }
       BulkWriteResult bulkWriteResult = getBulkWriteResult(writeConcern);
-      throw new InsertManyWriteConcernException(bulkWriteResult, unmodifiableList(new ArrayList<WriteError>(errors)));
+      throw new BulkWriteException(bulkWriteResult, bwErrors, null, address);
     }
   }
 

@@ -9,6 +9,7 @@ import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.BulkWriteException;
 import com.mongodb.BulkWriteOperation;
 import com.mongodb.BulkWriteResult;
 import com.mongodb.CommandResult;
@@ -2806,6 +2807,28 @@ public class FongoTest {
     assertNull(result);
     result = collection.findOne(new BasicDBObject("_id", 100));
     assertEquals(new BasicDBObject("_id", 100).append("hi", 2), result);
+  }
+
+  // https://github.com/fakemongo/fongo/issues/328
+  @Test
+  public void test_bulk_update_withDupes() {
+    // Given
+    DBCollection collection = newCollection();
+    collection.insert(new BasicDBObject("_id", 100).append("hi", 1));
+
+    // When
+    BulkWriteOperation bulkWriteOperation = collection.initializeUnorderedBulkOperation();
+      // these are all safe
+    bulkWriteOperation.insert(new BasicDBObject("_id", 101).append("hi", 1));
+    bulkWriteOperation.insert(new BasicDBObject("_id", 102).append("hi", 1));
+    bulkWriteOperation.insert(new BasicDBObject("_id", 103).append("hi", 1));
+    bulkWriteOperation.insert(new BasicDBObject("_id", 104).append("hi", 1));
+      // this one should break it
+    bulkWriteOperation.insert(new BasicDBObject("_id", 100).append("hi", 1));
+
+    // Then
+    exception.expect(BulkWriteException.class);
+    bulkWriteOperation.execute().isAcknowledged();
   }
 
   @Test

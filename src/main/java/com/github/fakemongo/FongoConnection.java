@@ -3,6 +3,7 @@ package com.github.fakemongo;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BulkUpdateRequestBuilder;
+import com.mongodb.BulkWriteException;
 import com.mongodb.BulkWriteOperation;
 import com.mongodb.BulkWriteRequestBuilder;
 import com.mongodb.DB;
@@ -226,6 +227,16 @@ public class FongoConnection implements Connection {
       for (FongoBulkWriteCombiner.WriteError writeError : writeException.getErrors()) {
         indexMap.add(writeError.getIndex(), writeError.getIndex());
         bulkWriteBatchCombiner.addWriteErrorResult(getBulkWriteError(writeError.getException(), writeError.getIndex()), indexMap);
+      }
+    } catch (BulkWriteException bulkWriteException) {
+      // we need to pull the information out of the BulkWriteException and package it up in bulkWriteBatchCombiner
+      // bulkWriteBatchCombiner.getResult() will end up throwing a MongoBulkWriteException (NOT a BulkWriteException!)
+      // because that's what mongo does??
+      BulkWriteResult transformed = FongoDBCollection.translateBulkWriteResultToNew(bulkWriteException.getWriteResult());
+      bulkWriteBatchCombiner.addResult(transformed, indexMap);
+      for (com.mongodb.bulk.BulkWriteError writeError : FongoDBCollection.translateWriteErrorsToNew(bulkWriteException.getWriteErrors())) {
+        indexMap.add(writeError.getIndex(), writeError.getIndex());
+        bulkWriteBatchCombiner.addWriteErrorResult(writeError, indexMap);
       }
     } catch (WriteConcernException writeException) {
       if (writeException.getResponse().get("wtimeout") != null) {
@@ -669,7 +680,7 @@ public class FongoConnection implements Connection {
     if (!bulkWriteResult.isAcknowledged()) {
       return BulkWriteResult.unacknowledged();
     }
-    return BulkWriteResult.acknowledged(bulkWriteResult.getInsertedCount(), bulkWriteResult.getMatchedCount(), bulkWriteResult.getRemovedCount(), bulkWriteResult.getModifiedCount(), FongoDBCollection.translateBulkWriteUpsertsToNew(bulkWriteResult.getUpserts(), null));
+    return BulkWriteResult.acknowledged(bulkWriteResult.getInsertedCount(), bulkWriteResult.getMatchedCount(), bulkWriteResult.getRemovedCount(), bulkWriteResult.getModifiedCount(), FongoDBCollection.translateBulkWriteUpsertsToNew(bulkWriteResult.getUpserts()));
   }
 
 }
