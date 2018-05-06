@@ -1,9 +1,11 @@
 /**
  * Copyright (C) 2017 Deveryware S.A. All Rights Reserved.
  */
-package com.mongodb;
+package com.mongodb.client.internal;
 
 import com.github.fakemongo.Fongo;
+import com.mongodb.ReadPreference;
+import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.operation.ReadOperation;
 import com.mongodb.operation.WriteOperation;
 import com.mongodb.session.ClientSession;
@@ -14,7 +16,7 @@ import com.mongodb.session.ClientSession;
 public class FongoOperationExecutor implements OperationExecutor {
   private final Fongo fongo;
 
-  FongoOperationExecutor(Fongo fongo) {
+  public FongoOperationExecutor(Fongo fongo) {
     this.fongo = fongo;
   }
 

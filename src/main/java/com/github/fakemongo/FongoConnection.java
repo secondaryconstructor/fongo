@@ -320,7 +320,7 @@ public class FongoConnection implements Connection {
 
   private void validateCollectionName(String collectionName) {
     if (collectionName == null || collectionName.isEmpty() || collectionName.startsWith("system.")
-            || collectionName.contains("$") || collectionName.contains("\0"))
+        || collectionName.contains("$") || collectionName.contains("\0"))
       throw new IllegalArgumentException("Invalid collection name " + collectionName);
   }
 
@@ -616,12 +616,10 @@ public class FongoConnection implements Connection {
         if (payload.hasAnotherSplit()) {
           documentsToDelete = Collections.singletonList(payload.getPayload().get(payload.getPosition()));
           payload.setPosition(payload.getPosition() + 1);
-        }
-        else {
+        } else {
           documentsToDelete = Collections.emptyList();
         }
-      }
-      else {
+      } else {
         documentsToDelete = command.getArray("deletes").getValues();
       }
 
@@ -658,8 +656,7 @@ public class FongoConnection implements Connection {
 
       if (payload != null) {
         return (T) new BsonDocument("ok", new BsonInt32(1)).append("n", new BsonInt32(numDocsDeleted));
-      }
-      else {
+      } else {
         return (T) new Document("ok", 1).append("n", numDocsDeleted);
       }
     } else if (command.containsKey("find")) {

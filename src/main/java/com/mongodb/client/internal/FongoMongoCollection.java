@@ -1,11 +1,15 @@
-package com.mongodb;
+package com.mongodb.client.internal;
 
 import com.github.fakemongo.Fongo;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoNamespace;
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.IndexModel;
-import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.result.UpdateResult;
 import com.mongodb.util.FongoJSON;
 import java.util.ArrayList;
 import java.util.List;

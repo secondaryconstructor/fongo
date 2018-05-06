@@ -4,6 +4,9 @@ import com.github.fakemongo.Fongo;
 import com.github.fakemongo.FongoConnection;
 import com.mongodb.async.SingleResultCallback;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.internal.FongoMongoDatabase;
+import com.mongodb.client.internal.FongoOperationExecutor;
+import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.connection.AsyncConnection;
 import com.mongodb.connection.BufferProvider;
 import com.mongodb.connection.Cluster;
@@ -186,7 +189,7 @@ public class MockMongoClient extends MongoClient {
     };
   }
 
-  com.mongodb.OperationExecutor createOperationExecutor() {
+  OperationExecutor createOperationExecutor() {
     return new FongoOperationExecutor(fongo);
   }
 
