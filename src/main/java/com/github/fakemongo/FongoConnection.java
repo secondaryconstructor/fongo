@@ -610,7 +610,7 @@ public class FongoConnection implements Connection {
       }
     } else if (command.containsKey("delete")) {
       final FongoDBCollection dbCollection = (FongoDBCollection) db.getCollection(command.get("delete").asString().getValue());
-      List<BsonValue> documentsToDelete;
+      List<? extends BsonValue> documentsToDelete;
 
       if (payload != null) {
         if (payload.hasAnotherSplit()) {
