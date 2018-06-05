@@ -574,6 +574,46 @@ public class FongoConnection implements Connection {
         documents.add(new BsonDocument("name", new BsonString(databaseName)));
       }
       return (T) new BsonDocument("databases", FongoBsonArrayWrapper.bsonArrayWrapper(documents));
+    } else if (command.containsKey("buildInfo")) {
+      return (T) Document.parse("{\n" +
+              "\t\"version\" : \"3.6.4\",\n" +
+              "\t\"gitVersion\" : \"d0181a711f7e7f39e60b5aeb1dc7097bf6ae5856\",\n" +
+              "\t\"modules\" : [ ],\n" +
+              "\t\"allocator\" : \"tcmalloc\",\n" +
+              "\t\"javascriptEngine\" : \"mozjs\",\n" +
+              "\t\"sysInfo\" : \"deprecated\",\n" +
+              "\t\"versionArray\" : [\n" +
+              "\t\t3,\n" +
+              "\t\t6,\n" +
+              "\t\t4,\n" +
+              "\t\t0\n" +
+              "\t],\n" +
+              "\t\"openssl\" : {\n" +
+              "\t\t\"running\" : \"OpenSSL 1.0.1t  3 May 2016\",\n" +
+              "\t\t\"compiled\" : \"OpenSSL 1.0.1t  3 May 2016\"\n" +
+              "\t},\n" +
+              "\t\"buildEnvironment\" : {\n" +
+              "\t\t\"distmod\" : \"debian81\",\n" +
+              "\t\t\"distarch\" : \"x86_64\",\n" +
+              "\t\t\"cc\" : \"/opt/mongodbtoolchain/v2/bin/gcc: gcc (GCC) 5.4.0\",\n" +
+              "\t\t\"ccflags\" : \"-fno-omit-frame-pointer -fno-strict-aliasing -ggdb -pthread -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -Werror -O2 -Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-but-set-variable -Wno-missing-braces -fstack-protector-strong -fno-builtin-memcmp\",\n" +
+              "\t\t\"cxx\" : \"/opt/mongodbtoolchain/v2/bin/g++: g++ (GCC) 5.4.0\",\n" +
+              "\t\t\"cxxflags\" : \"-Woverloaded-virtual -Wno-maybe-uninitialized -std=c++14\",\n" +
+              "\t\t\"linkflags\" : \"-pthread -Wl,-z,now -rdynamic -Wl,--fatal-warnings -fstack-protector-strong -fuse-ld=gold -Wl,--build-id -Wl,--hash-style=gnu -Wl,-z,noexecstack -Wl,--warn-execstack -Wl,-z,relro\",\n" +
+              "\t\t\"target_arch\" : \"x86_64\",\n" +
+              "\t\t\"target_os\" : \"linux\"\n" +
+              "\t},\n" +
+              "\t\"bits\" : 64,\n" +
+              "\t\"debug\" : false,\n" +
+              "\t\"maxBsonObjectSize\" : 16777216,\n" +
+              "\t\"storageEngines\" : [\n" +
+              "\t\t\"devnull\",\n" +
+              "\t\t\"ephemeralForTest\",\n" +
+              "\t\t\"mmapv1\",\n" +
+              "\t\t\"wiredTiger\"\n" +
+              "\t],\n" +
+              "\t\"ok\" : 1\n" +
+              "}\n");
     } else {
       LOG.warn("Command not implemented: {}", command);
       throw new FongoException("Not implemented for command : " + JSON.serialize(dbObject(command)));

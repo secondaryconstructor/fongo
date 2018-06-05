@@ -1210,7 +1210,6 @@ public abstract class AbstractFongoV3Test {
     );
   }
 
-
   @Test
   public void should_ping_fongo() {
     // Given
@@ -1219,6 +1218,16 @@ public abstract class AbstractFongoV3Test {
 
     // Then
     Assertions.assertThat(ping.getDouble("ok")).isEqualTo(1.0);
+  }
+
+  @Test
+  public void should_buildInfo_fongo() {
+    // Given
+    // When
+    final Document buildInfo = fongoRule.getDatabase().runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
+
+    // Then
+    Assertions.assertThat(buildInfo.getInteger("ok")).isEqualTo(1);
   }
 
   @Test
