@@ -5,6 +5,7 @@ import java.util.Date
 import com.github.fakemongo.Fongo
 import com.mongodb.casbah.Imports._
 import org.scalatest.{FunSuite, ShouldMatchers}
+import scala.language.reflectiveCalls
 
 class FongoCasbahSuite extends FunSuite with ShouldMatchers {
 
