@@ -96,4 +96,10 @@ public class FongoDBTest {
     assertThat(commandResult.toMap()).containsKey("results");
   }
 
+  @Test
+  public void commandStats() throws Exception {
+    db = new Fongo("testfongo", new ServerVersion(3, 1)).getDB("testdb");
+    CommandResult commandResult = db.getStats();
+    assertThat(commandResult.isEmpty()).isTrue();
+  }
 }
