@@ -7,6 +7,14 @@ import com.github.fakemongo.impl.geo.GeoUtil;
 import com.mongodb.connection.ServerVersion;
 import com.mongodb.util.JSON;
 import com.vividsolutions.jts.geom.Coordinate;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -15,13 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bson.BsonBoolean;
-import org.bson.BsonDocument;
-import org.bson.BsonDouble;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * fongo override of com.mongodb.DB
@@ -156,6 +157,11 @@ public class FongoDB extends DB {
   @Override
   public DB getSisterDB(String name) {
     return fongo.getDB(name);
+  }
+
+  @Override
+  public CommandResult getStats() {
+	return new CommandResult(BsonDocument.parse("{}"));
   }
 
   @Override
