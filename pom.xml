@@ -65,7 +65,7 @@
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
 
         <!-- Gpg -->
-        <gpg.keyname>257FA0AB</gpg.keyname>
+        <gpg.keyname>24835EF6F455DF40</gpg.keyname>
     </properties>
 
     <dependencies>
@@ -265,26 +265,26 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${version.surefire}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit47</artifactId>
-                        <version>${version.surefire}</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <argLine>${jacoco.argLine.unit}
-                        -Dfile.encoding=${project.build.sourceEncoding} -Xmx512m
-                    </argLine>
-                    <excludes>
-                        <exclude>com/github/fakemongo/PerfTest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <version>${version.surefire}</version>-->
+<!--                <dependencies>-->
+<!--                    <dependency>-->
+<!--                        <groupId>org.apache.maven.surefire</groupId>-->
+<!--                        <artifactId>surefire-junit47</artifactId>-->
+<!--                        <version>${version.surefire}</version>-->
+<!--                    </dependency>-->
+<!--                </dependencies>-->
+<!--                <configuration>-->
+<!--                    <argLine>${jacoco.argLine.unit}-->
+<!--                        -Dfile.encoding=${project.build.sourceEncoding} -Xmx512m-->
+<!--                    </argLine>-->
+<!--                    <excludes>-->
+<!--                        <exclude>com/github/fakemongo/PerfTest.java</exclude>-->
+<!--                    </excludes>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>

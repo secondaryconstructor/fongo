@@ -3,7 +3,7 @@ node {
    stage 'Checkout'
 
    // Get some code from a GitHub repository
-   git url: 'https://github.com/fakemongo/fongo.git'
+   git url: 'https://github.com/secondaryconstructor/fongo.git'
 
    // Get the maven tool.
    // ** NOTE: This 'M3' maven tool must be configured
@@ -16,6 +16,6 @@ node {
    sh "${mvnHome}/bin/mvn clean install"
    
    stage 'Notify'
-   mail body: 'Please go to ${env.BUILD_URL}', charset: 'UTF-8', mimeType: 'text/plain', subject: 'Job \'${env.JOB_NAME}\' (${env.BUILD_NUMBER}) is ${currentBuild.result}', to: 'william.delanoue@gmail.com'
+   mail body: 'Please go to ${env.BUILD_URL}', charset: 'UTF-8', mimeType: 'text/plain', subject: 'Job \'${env.JOB_NAME}\' (${env.BUILD_NUMBER}) is ${currentBuild.result}', to: 'secondaryconstructor@gmail.com'
 }
 
