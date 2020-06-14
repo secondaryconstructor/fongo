@@ -222,7 +222,7 @@
                     <target>1.6</target>
                     <encoding>UTF-8</encoding>
                     <testExcludes>
-                        <exclude>com/github/secondaryconstructor/PerfTest.java</exclude>
+                        <exclude>com/github/fakemongo/PerfTest.java</exclude>
                     </testExcludes>
                 </configuration>
             </plugin>
@@ -281,7 +281,7 @@
                         -Dfile.encoding=${project.build.sourceEncoding} -Xmx512m
                     </argLine>
                     <excludes>
-                        <exclude>com/github/secondaryconstructor/PerfTest.java</exclude>
+                        <exclude>com/github/fakemongo/PerfTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -343,7 +343,7 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.3</version>
                 <configuration>
-                    <excludePackageNames>com.mongodb:com.github.secondaryconstructor.impl</excludePackageNames>
+                    <excludePackageNames>com.mongodb:com.github.fakemongo.impl</excludePackageNames>
                 </configuration>
                 <executions>
                     <execution>
@@ -370,10 +370,10 @@
                             <rules>
                                 <rule>
                                     <pattern>org.objenesis.**</pattern>
-                                    <result>com.github.secondaryconstructor.internal.objenesis.@1</result>
+                                    <result>com.github.fakemongo.internal.objenesis.@1</result>
                                 </rule>
                                 <keep>
-                                    <pattern>com.github.secondaryconstructor.**</pattern>
+                                    <pattern>com.github.fakemongo.**</pattern>
                                 </keep>
                             </rules>
                         </configuration>
@@ -486,7 +486,7 @@
                         </dependencies>
                         <configuration>
                             <includes>
-                                <include>com/github/secondaryconstructor/PerfTest.java</include>
+                                <include>com/github/fakemongo/PerfTest.java</include>
                             </includes>
                         </configuration>
                     </plugin>
@@ -499,7 +499,7 @@
                             <target>1.6</target>
                             <encoding>UTF-8</encoding>
                             <testIncludes>
-                                <include>com/github/secondaryconstructor/PerfTest.java</include>
+                                <include>com/github/fakemongo/PerfTest.java</include>
                             </testIncludes>
                         </configuration>
                     </plugin>
