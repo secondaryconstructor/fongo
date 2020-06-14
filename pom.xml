@@ -5,12 +5,12 @@
         <artifactId>oss-parent</artifactId>
         <version>9</version>
     </parent>
-    <groupId>com.github.fakemongo</groupId>
+    <groupId>com.github.secondaryconstructor</groupId>
     <artifactId>fongo</artifactId>
-    <version>2.1.2-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>fongo</name>
     <description>Fake in-memory mongo</description>
-    <url>https://github.com/fakemongo/fongo</url>
+    <url>https://github.com/secondaryconstructor/fongo</url>
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -19,9 +19,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git@github.com:fakemongo/fongo.git</connection>
-        <developerConnection>scm:git:git@github.com:fakemongo/fongo.git</developerConnection>
-        <url>git@github.com:fakemongo/fongo.git</url>
+        <connection>scm:git:git@github.com:secondaryconstructor/fongo.git</connection>
+        <developerConnection>scm:git:git@github.com:secondaryconstructor/fongo.git</developerConnection>
+        <url>git@github.com:secondaryconstructor/fongo.git</url>
     </scm>
 
     <prerequisites>
@@ -29,6 +29,11 @@
     </prerequisites>
 
     <developers>
+        <developer>
+            <id>secondaryconstructor</id>
+            <name>Akhil Tiwari</name>
+            <email>secondaryconstructor@gmail.com</email>
+        </developer>
         <developer>
             <id>hoffrocket</id>
             <name>Jon Hoffman</name>
@@ -217,7 +222,7 @@
                     <target>1.6</target>
                     <encoding>UTF-8</encoding>
                     <testExcludes>
-                        <exclude>com/github/fakemongo/PerfTest.java</exclude>
+                        <exclude>com/github/secondaryconstructor/PerfTest.java</exclude>
                     </testExcludes>
                 </configuration>
             </plugin>
@@ -276,7 +281,7 @@
                         -Dfile.encoding=${project.build.sourceEncoding} -Xmx512m
                     </argLine>
                     <excludes>
-                        <exclude>com/github/fakemongo/PerfTest.java</exclude>
+                        <exclude>com/github/secondaryconstructor/PerfTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -338,7 +343,7 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.3</version>
                 <configuration>
-                    <excludePackageNames>com.mongodb:com.github.fakemongo.impl</excludePackageNames>
+                    <excludePackageNames>com.mongodb:com.github.secondaryconstructor.impl</excludePackageNames>
                 </configuration>
                 <executions>
                     <execution>
@@ -365,10 +370,10 @@
                             <rules>
                                 <rule>
                                     <pattern>org.objenesis.**</pattern>
-                                    <result>com.github.fakemongo.internal.objenesis.@1</result>
+                                    <result>com.github.secondaryconstructor.internal.objenesis.@1</result>
                                 </rule>
                                 <keep>
-                                    <pattern>com.github.fakemongo.**</pattern>
+                                    <pattern>com.github.secondaryconstructor.**</pattern>
                                 </keep>
                             </rules>
                         </configuration>
@@ -481,7 +486,7 @@
                         </dependencies>
                         <configuration>
                             <includes>
-                                <include>com/github/fakemongo/PerfTest.java</include>
+                                <include>com/github/secondaryconstructor/PerfTest.java</include>
                             </includes>
                         </configuration>
                     </plugin>
@@ -494,7 +499,7 @@
                             <target>1.6</target>
                             <encoding>UTF-8</encoding>
                             <testIncludes>
-                                <include>com/github/fakemongo/PerfTest.java</include>
+                                <include>com/github/secondaryconstructor/PerfTest.java</include>
                             </testIncludes>
                         </configuration>
                     </plugin>
